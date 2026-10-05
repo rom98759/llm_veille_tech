@@ -82,6 +82,27 @@ def cmd_check(args):
         print(f"Tableau : {args.out}")
 
 
+def cmd_opml(args):
+    """Export des flux de config.yaml en OPML (une catégorie par axe) pour Miniflux, FreshRSS, betternews..."""
+    from xml.sax.saxutils import quoteattr
+    cfg = load_config(args.config)
+    groups = {a.title: a.feeds for a in cfg.axes.values()}
+    groups["Partagés"] = cfg.shared_feeds
+    out = ['<?xml version="1.0" encoding="UTF-8"?>', '<opml version="2.0">', "<head><title>veille</title></head>", "<body>"]
+    skipped = []
+    for title, feeds in groups.items():
+        out.append(f"  <outline text={quoteattr(title)} title={quoteattr(title)}>")
+        for f in feeds:
+            if f.kind != "rss":
+                skipped.append(f.name)
+                continue
+            out.append(f'    <outline type="rss" text={quoteattr(f.name)} title={quoteattr(f.name)} xmlUrl={quoteattr(f.url)}/>')
+        out.append("  </outline>")
+    out += ["</body>", "</opml>"]
+    Path(args.out).write_text("\n".join(out) + "\n", encoding="utf-8")
+    print(f"OPML : {args.out}" + (f" (ignorées, pas du RSS : {', '.join(skipped)})" if skipped else ""))
+
+
 def cmd_discover(args):
     for site in args.sites:
         found = check.discover(site)
@@ -119,6 +140,10 @@ def main(argv=None):
     cp.add_argument("--stale-days", type=int, default=30, help="au-delà : source jugée inactive")
     cp.add_argument("--out", help="écrire le tableau Markdown ici (ex. reports/sources.md)")
     cp.set_defaults(fn=cmd_check, standalone=True)
+
+    op = sub.add_parser("export-opml", help="exporter les flux en OPML (import Miniflux/FreshRSS)")
+    op.add_argument("--out", default="feeds.opml")
+    op.set_defaults(fn=cmd_opml, standalone=True)
 
     dp = sub.add_parser("discover", help="trouver le(s) flux RSS/Atom d'un site")
     dp.add_argument("sites", nargs="+")

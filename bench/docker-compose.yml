@@ -1,0 +1,50 @@
+# Banc de comparaison : Miniflux (collecte/lecture) + miniflux-ai (résumés + digest LLM).
+# Ollama tourne sur l'hôte (doit écouter sur 0.0.0.0 : OLLAMA_HOST=0.0.0.0 ollama serve).
+#   cp miniflux-ai.config.yml config.yml && docker compose up -d
+#   Miniflux : http://localhost:8081  (admin / veille-bench)
+services:
+  miniflux:
+    image: miniflux/miniflux:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ["8081:8080"]
+    environment:
+      - DATABASE_URL=postgres://miniflux:secret@db/miniflux?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=veille-bench
+      - POLLING_FREQUENCY=30            # minutes
+      - BATCH_SIZE=100
+      # Requis depuis 2.2.18 pour joindre miniflux_ai (webhook + flux AI news) sur le réseau docker
+      - FETCHER_ALLOW_PRIVATE_NETWORKS=1
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=miniflux
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=miniflux
+    volumes: [miniflux-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "miniflux"]
+      interval: 10s
+      start_period: 30s
+    restart: unless-stopped
+
+  miniflux_ai:
+    container_name: miniflux_ai
+    image: ghcr.io/qetesh/miniflux-ai:latest
+    depends_on: [miniflux]
+    extra_hosts: ["host.docker.internal:host-gateway"]   # accès à l'Ollama de l'hôte sous Linux
+    environment:
+      TZ: Europe/Paris
+    volumes:
+      - ./config.yml:/app/config.yml
+      - ./entries.json:/app/entries.json   # persistance du digest « AI news » (créer le fichier vide avant)
+    restart: unless-stopped
+
+volumes:
+  miniflux-db:

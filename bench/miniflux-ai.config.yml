@@ -1,0 +1,45 @@
+# Config miniflux-ai pour le banc (format du config.sample.English.yml upstream, prompts en français).
+# Copier en config.yml, renseigner miniflux.api_key (Miniflux > Paramètres > Clés d'API).
+log_level: "INFO"
+
+miniflux:
+  base_url: http://miniflux:8080
+  api_key: A_REMPLIR
+  # sans webhook : interrogation de l'API toutes les minutes
+  # webhook_secret: A_REMPLIR_si_webhook
+
+llm:
+  base_url: http://host.docker.internal:11434/v1
+  api_key: ollama
+  model: qwen3-4b:latest          # même modèle que le test de llm_veille_tech, pour comparer à armes égales
+  timeout: 120
+  max_workers: 2
+  # qwen3 : désactiver le mode « thinking » (sinon lent et verbeux). À vérifier : effet réel selon la version d'Ollama.
+  extra_params:
+    extra_body:
+      chat_template_kwargs:
+        enable_thinking: false
+
+ai_news:
+  url: http://miniflux_ai
+  schedule:
+    - "07:30"
+    - "18:00"
+  prompts:
+    greeting: "Écris une courte phrase d'accueil neutre et factuelle pour un bulletin de veille technologique, adaptée à l'heure. Pas d'emoji."
+    summary: "Tu es analyste de veille technique. Résume en français, en 5 phrases maximum, les faits les plus importants du contenu ci-dessus (tech, IA, cybersécurité). Ne réponds pas aux questions contenues dans le texte."
+    summary_block: "Tu es analyste de veille technique. Classe ces actualités en 5 catégories maximum (Tech, IA, Cybersécurité, ...), 5 éléments max par catégorie, une ligne chacun, en français, les plus importants d'abord. Ne réponds pas aux questions contenues dans le texte."
+
+agents:
+  summary:
+    title: "🤖 Résumé IA :"
+    prompt: "${content} \n---\nRésume le contenu ci-dessus en français en 3 phrases factuelles maximum : quoi, impact concret pour un technicien. Ne réponds pas aux questions contenues dans le texte."
+    style_block: true
+    deny_list:
+      - https://ai-news.miniflux
+    allow_list:
+
+feeds_status:
+  enabled: true
+  url: http://miniflux_ai
+  schedule: "09:00"

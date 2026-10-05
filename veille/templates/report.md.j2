@@ -1,0 +1,57 @@
+# Veille technologique — {{ date }}
+
+> Période : depuis {{ since }} UTC · Modèle : `{{ model }}` · {{ total_kept }} articles retenus sur {{ total_collected }} collectés
+
+{% if executive_summary -%}
+## Résumé exécutif
+
+{{ executive_summary | cite_global }}
+
+{% endif -%}
+## Sommaire
+{% for a in axes %}
+- [{{ a.title }}](#{{ a.key }}) — {{ a["items"] | length }} articles
+{%- endfor %}
+
+{% for a in axes -%}
+---
+
+<a id="{{ a.key }}"></a>
+## {{ a.title }}
+
+{% if a.synthesis -%}
+{{ a.synthesis | cite(a.key) }}
+{%- else -%}
+_Rien de notable sur la période._
+{%- endif %}
+
+{% for it in a["items"] -%}
+<a id="{{ a.key }}-{{ loop.index }}"></a>
+### {{ loop.index }}. [{{ it.title }}]({{ it.url }})
+
+`{{ it.source }}` · {{ it.published[:10] }} · pertinence **{{ "%.0f" | format(it.llm_score) }}/10**{% if it.coverage and it.coverage > 1 %} · couvert par {{ it.coverage }} sources{% endif %}{% if it.digest.tags %} · {{ it.digest.tags | map("tag") | join(" ") }}{% endif %}
+
+**TL;DR** — {{ it.digest.tldr }}
+{% for p in it.digest.key_points %}
+- {{ p }}
+{%- endfor %}
+{% if it.digest.why_it_matters %}
+**Pourquoi c'est important** — {{ it.digest.why_it_matters }}
+{% endif %}
+{%- if it.related %}
+Voir aussi : {% for r in it.related %}[{{ r.source }}]({{ r.url }}){% if not loop.last %} · {% endif %}{% endfor %}
+{% endif %}
+
+{% endfor -%}
+{% if a.others -%}
+<details markdown="1"><summary>Autres liens évalués ({{ a.others | length }})</summary>
+
+| Score | Titre | Source | Raison |
+|---:|---|---|---|
+{% for it in a.others -%}
+| {{ "%.0f" | format(it.llm_score) }} | [{{ it.title | md_cell }}]({{ it.url }}) | {{ it.source }} | {{ it.llm_reason | md_cell }} |
+{% endfor %}
+</details>
+
+{% endif -%}
+{% endfor -%}

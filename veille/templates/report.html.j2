@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille {{ date }}</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --accent:#2563eb; --card:#fff; --border:#e7e5e4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c0a09; --fg:#e7e5e4; --muted:#a8a29e; --accent:#60a5fa; --card:#1c1917; --border:#292524; }
+  }
+  body { background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, sans-serif; margin:0; padding:0 16px; }
+  main { max-width:860px; margin:2rem auto; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+  h1 { font-size:1.8rem; } h2 { margin-top:2.5rem; } h3 { font-size:1.05rem; margin-bottom:.3rem; }
+  blockquote { color:var(--muted); border-left:3px solid var(--border); margin:0; padding-left:1rem; }
+  code { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:0 .3em; font-size:.85em; }
+  hr { border:0; border-top:1px solid var(--border); margin:2.5rem 0; }
+  details { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:.6rem 1rem; }
+  summary { cursor:pointer; color:var(--muted); }
+  table { border-collapse:collapse; width:100%; font-size:.9rem; display:block; overflow-x:auto; }
+  td, th { border-bottom:1px solid var(--border); padding:.35rem .5rem; vertical-align:top; }
+  .tag { color:var(--muted); font-size:.85em; }
+</style>
+</head>
+<body><main>
+{{ body }}
+</main></body>
+</html>

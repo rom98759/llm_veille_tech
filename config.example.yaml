@@ -1,0 +1,76 @@
+# Copier en config.yaml puis adapter.
+
+llm:
+  # N'importe quel serveur compatible OpenAI : Ollama, llama.cpp server, LM Studio, vLLM...
+  base_url: http://localhost:11434/v1
+  api_key: ollama            # ignoré par Ollama
+  model: qwen2.5:7b-instruct # ou llama3.1:8b, mistral-nemo, gemma2:9b...
+  temperature: 0.2
+  timeout: 300
+  max_input_chars: 6000      # texte d'article envoyé au modèle (tronqué)
+
+storage:
+  db_path: data/veille.db
+  reports_dir: reports
+
+pipeline:
+  lookback_days: 2           # fenêtre de collecte pour un rapport
+  candidates_per_axis: 25    # pré-tri heuristique -> jugés par le LLM
+  keep_per_axis: 8           # articles retenus et résumés par axe
+  min_llm_score: 6           # seuil de pertinence (0-10)
+  fetch_full_text: true      # extraire le contenu de la page (trafilatura)
+  language: français         # langue du rapport
+
+# Profil global : ce qui t'intéresse / ce qui est du bruit. Injecté dans le prompt de notation.
+profile: |
+  Ingénieur infra/sécu qui gère un homelab. Intéressé par : nouveautés techniques concrètes,
+  sorties de versions majeures, vulnérabilités exploitées, outils open source, papiers/benchmarks IA.
+  Peu intéressé par : levées de fonds, marketing, rumeurs, contenus sponsorisés, listicles.
+
+# Flux partagés : chaque article est routé vers les axes dont les mots-clés matchent.
+shared_feeds:
+  - name: Hacker News (front page)
+    url: "https://hnrss.org/frontpage?points=100"
+    weight: 1.2
+  - name: Lobsters
+    url: "https://lobste.rs/rss"
+    weight: 1.0
+
+axes:
+  tech:
+    title: Tech globale
+    description: Infra, dev, cloud, open source, matériel, OS.
+    keywords: [linux, kernel, kubernetes, docker, rust, python, postgres, release, open source, cloud, cpu, gpu]
+    feeds:
+      - {name: LWN, url: "https://lwn.net/headlines/rss", weight: 1.3}
+      - {name: The Register, url: "https://www.theregister.com/headlines.atom", weight: 1.0}
+      - {name: Ars Technica, url: "https://feeds.arstechnica.com/arstechnica/technology-lab", weight: 1.0}
+
+  ia:
+    title: Intelligence artificielle
+    description: Modèles, recherche, outils, inférence locale, régulation.
+    keywords: [llm, model, gpt, claude, llama, mistral, qwen, transformer, inference, agent, rag, diffusion, fine-tuning, "ai act"]
+    feeds:
+      - {name: Hugging Face Blog, url: "https://huggingface.co/blog/feed.xml", weight: 1.3}
+      - {name: Simon Willison, url: "https://simonwillison.net/atom/everything/", weight: 1.3}
+      - {name: arXiv cs.CL, url: "https://rss.arxiv.org/rss/cs.CL", weight: 0.7}
+      - {name: r/LocalLLaMA, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", weight: 1.0}
+
+  cyber:
+    title: Cybersécurité
+    description: Vulnérabilités, campagnes, incidents, outils défensifs.
+    keywords: [cve, vulnerability, exploit, ransomware, malware, zero-day, 0day, patch, breach, apt, phishing, rce]
+    feeds:
+      - {name: CERT-FR Alertes, url: "https://www.cert.ssi.gouv.fr/alerte/feed/", weight: 1.5}
+      - {name: CERT-FR Avis, url: "https://www.cert.ssi.gouv.fr/avis/feed/", weight: 1.0}
+      - {name: BleepingComputer, url: "https://www.bleepingcomputer.com/feed/", weight: 1.1}
+      - {name: Krebs on Security, url: "https://krebsonsecurity.com/feed/", weight: 1.2}
+      - {name: CISA KEV, url: "https://www.cisa.gov/cybersecurity-advisories/all.xml", weight: 1.3}
+
+  # Ajoute tes propres axes ici, ex :
+  # homelab:
+  #   title: Homelab & self-hosting
+  #   description: Proxmox, NAS, réseau, domotique.
+  #   keywords: [proxmox, truenas, homelab, self-hosted, home assistant, opnsense, wireguard]
+  #   feeds:
+  #     - {name: r/selfhosted, url: "https://www.reddit.com/r/selfhosted/top/.rss?t=day"}

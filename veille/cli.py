@@ -4,8 +4,10 @@ import argparse
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import collect, db, process, report
-from .config import load_config
+from pathlib import Path
+
+from . import check, collect, db, process, report
+from .config import load_catalog, load_config
 
 
 def cmd_collect(cfg, conn, args):
@@ -48,6 +50,48 @@ def cmd_links(cfg, conn, args):
         print(f"{r['published'][:10]} {score} {r['axis']:<8} {r['source'][:18]:<18} {r['title'][:80]}\n{'':>12}{r['url']}")
 
 
+ICONS = {"OK": "✅", "INACTIF": "💤", "VIDE": "⚠️ ", "PAGE HTML": "🔎", "ERREUR": "❌"}
+
+
+def cmd_check(args):
+    """Teste chaque source pour de vrai (HTTP, parsing, fraîcheur)."""
+    if args.catalog:
+        groups = load_catalog(args.catalog)
+    else:
+        cfg = load_config(args.config)
+        groups = {k: a.feeds for k, a in cfg.axes.items()}
+        groups["partagés"] = cfg.shared_feeds
+    if args.group:
+        groups = {k: v for k, v in groups.items() if k in args.group}
+
+    lines = ["| | Groupe | Source | HTTP | Articles | Dernier | Détail | URL |", "|---|---|---|---|---:|---|---|---|"]
+    counts: dict[str, int] = {}
+    for group, feeds in groups.items():
+        print(f"\n== {group} ({len(feeds)})")
+        for r in check.check_feeds(feeds, args.stale_days):
+            counts[r["verdict"]] = counts.get(r["verdict"], 0) + 1
+            redirect = f"  → {r['final_url']}" if r["final_url"] else ""
+            print(f"{ICONS[r['verdict']]} {r['verdict']:<9} {r['name'][:30]:<30} {str(r['status'] or '-'):>3} "
+                  f"{r['items']:>4} art. {r['latest'] or '':<10} {r['detail']}{redirect}")
+            lines.append(f"| {ICONS[r['verdict']]} | {group} | {r['name']} | {r['status'] or '-'} | {r['items']} | "
+                         f"{r['latest'] or ''} | {r['detail'].replace('|', '/')} | {r['final_url'] or r['url']} |")
+    print("\nBilan :", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text("# Vérification des sources\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
+        print(f"Tableau : {args.out}")
+
+
+def cmd_discover(args):
+    for site in args.sites:
+        found = check.discover(site)
+        print(f"\n== {site}")
+        if not found:
+            print("   aucun flux trouvé → RSS-Bridge / RSSHub, ou page « releases.atom » si projet GitHub")
+        for r in found:
+            print(f"   {ICONS[r['verdict']]} {r['final_url'] or r['url']}  ({r['items']} art., dernier {r['latest']})")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="veille", description="Veille technologique avec LLM local")
     p.add_argument("-c", "--config", default="config.yaml")
@@ -69,9 +113,22 @@ def main(argv=None):
     lp.set_defaults(fn=cmd_links)
     sub.choices["collect"].set_defaults(fn=cmd_collect)
 
+    cp = sub.add_parser("check-feeds", help="tester réellement chaque source (config ou catalogue)")
+    cp.add_argument("--catalog", help="fichier catalogue (ex. sources/catalog.yaml) au lieu de config.yaml")
+    cp.add_argument("--group", action="append", help="limiter à un axe/groupe (répétable)")
+    cp.add_argument("--stale-days", type=int, default=30, help="au-delà : source jugée inactive")
+    cp.add_argument("--out", help="écrire le tableau Markdown ici (ex. reports/sources.md)")
+    cp.set_defaults(fn=cmd_check, standalone=True)
+
+    dp = sub.add_parser("discover", help="trouver le(s) flux RSS/Atom d'un site")
+    dp.add_argument("sites", nargs="+")
+    dp.set_defaults(fn=cmd_discover, standalone=True)
+
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    if getattr(args, "standalone", False):  # pas besoin de base ni de LLM
+        return args.fn(args)
     cfg = load_config(args.config)
     conn = db.connect(cfg.db_path)
     args.fn(cfg, conn, args)

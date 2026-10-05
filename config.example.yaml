@@ -1,4 +1,5 @@
 # Copier en config.yaml puis adapter.
+# Tester les sources : veille check-feeds   |   plus de sources : sources/catalog.yaml
 
 llm:
   # N'importe quel serveur compatible OpenAI : Ollama, llama.cpp server, LM Studio, vLLM...
@@ -53,6 +54,8 @@ axes:
     feeds:
       - {name: Hugging Face Blog, url: "https://huggingface.co/blog/feed.xml", weight: 1.3}
       - {name: Simon Willison, url: "https://simonwillison.net/atom/everything/", weight: 1.3}
+      - {name: OpenAI News, url: "https://openai.com/news/rss.xml", weight: 1.1}
+      - {name: Google DeepMind, url: "https://deepmind.google/blog/rss.xml", weight: 1.1}
       - {name: arXiv cs.CL, url: "https://rss.arxiv.org/rss/cs.CL", weight: 0.7}
       - {name: r/LocalLLaMA, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", weight: 1.0}
 
@@ -61,11 +64,12 @@ axes:
     description: Vulnérabilités, campagnes, incidents, outils défensifs.
     keywords: [cve, vulnerability, exploit, ransomware, malware, zero-day, 0day, patch, breach, apt, phishing, rce]
     feeds:
-      - {name: CERT-FR Alertes, url: "https://www.cert.ssi.gouv.fr/alerte/feed/", weight: 1.5}
-      - {name: CERT-FR Avis, url: "https://www.cert.ssi.gouv.fr/avis/feed/", weight: 1.0}
+      - {name: CERT-FR, url: "https://www.cert.ssi.gouv.fr/feed/", weight: 1.4}
+      - {name: CISA KEV, url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", kind: cisa_kev, weight: 1.5}
       - {name: BleepingComputer, url: "https://www.bleepingcomputer.com/feed/", weight: 1.1}
+      - {name: The Hacker News, url: "https://feeds.feedburner.com/TheHackersNews", weight: 1.0}
       - {name: Krebs on Security, url: "https://krebsonsecurity.com/feed/", weight: 1.2}
-      - {name: CISA KEV, url: "https://www.cisa.gov/cybersecurity-advisories/all.xml", weight: 1.3}
+      - {name: SANS ISC, url: "https://isc.sans.edu/rssfeed_full.xml", weight: 1.0}
 
   # Ajoute tes propres axes ici, ex :
   # homelab:

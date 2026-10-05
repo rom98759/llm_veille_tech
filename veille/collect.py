@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 import re
 import sqlite3
@@ -43,18 +44,20 @@ def _entry_date(entry) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def fetch_feed(client: httpx.Client, feed: Feed) -> list[dict]:
-    try:
-        resp = client.get(feed.url)
-        resp.raise_for_status()
-    except httpx.HTTPError as e:
-        log.warning("flux %s inaccessible : %s", feed.name, e)
-        return []
-    parsed = feedparser.parse(resp.content)
+def entry_link(entry) -> str | None:
+    """Lien de l'article ; certains flux (ex. blog Hugging Face) n'ont que <guid>/<id>."""
+    for candidate in (entry.get("link"), entry.get("id"), entry.get("guid")):
+        if candidate and str(candidate).startswith(("http://", "https://")):
+            return candidate
+    return None
+
+
+def parse_rss(feed: Feed, content: bytes) -> list[dict]:
+    parsed = feedparser.parse(content)
     now = datetime.now(timezone.utc).isoformat()
     items = []
     for e in parsed.entries:
-        link = e.get("link")
+        link = entry_link(e)
         title = clean_text(e.get("title"), 300)
         if not link or not title:
             continue
@@ -67,6 +70,47 @@ def fetch_feed(client: httpx.Client, feed: Feed) -> list[dict]:
             "published": _entry_date(e).isoformat(),
             "fetched_at": now,
         })
+    return items
+
+
+def parse_cisa_kev(feed: Feed, content: bytes) -> list[dict]:
+    """Catalogue CISA KEV (JSON) : une entrée par CVE activement exploitée."""
+    data = json.loads(content)
+    now = datetime.now(timezone.utc).isoformat()
+    items = []
+    for v in data.get("vulnerabilities", []):
+        cve = v.get("cveID")
+        if not cve:
+            continue
+        added = datetime.fromisoformat(v.get("dateAdded", now[:10])).replace(tzinfo=timezone.utc)
+        ransomware = " — utilisée par des ransomwares" if v.get("knownRansomwareCampaignUse") == "Known" else ""
+        items.append({
+            "url": f"https://nvd.nist.gov/vuln/detail/{cve}",
+            "title": f"{cve} exploitée : {v.get('vendorProject', '')} {v.get('product', '')} — {v.get('vulnerabilityName', '')}",
+            "summary": f"{v.get('shortDescription', '')} Action requise : {v.get('requiredAction', '')}{ransomware}",
+            "source": feed.name,
+            "source_weight": feed.weight,
+            "published": added.isoformat(),
+            "fetched_at": now,
+        })
+    return items
+
+
+PARSERS = {"rss": parse_rss, "cisa_kev": parse_cisa_kev}
+
+
+def http_client() -> httpx.Client:
+    return httpx.Client(timeout=20, follow_redirects=True, headers={"User-Agent": USER_AGENT})
+
+
+def fetch_feed(client: httpx.Client, feed: Feed) -> list[dict]:
+    try:
+        resp = client.get(feed.url)
+        resp.raise_for_status()
+        items = PARSERS[feed.kind](feed, resp.content)
+    except (httpx.HTTPError, ValueError) as e:
+        log.warning("flux %s inaccessible : %s", feed.name, e)
+        return []
     log.info("%-28s %3d articles", feed.name, len(items))
     return items
 
@@ -76,7 +120,7 @@ def collect(cfg: Config, conn: sqlite3.Connection) -> int:
     jobs: list[tuple[Feed, Axis | None]] = [(f, a) for a in cfg.axes.values() for f in a.feeds]
     jobs += [(f, None) for f in cfg.shared_feeds]
 
-    with httpx.Client(timeout=20, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as client:
+    with http_client() as client:
         with ThreadPoolExecutor(max_workers=8) as pool:
             results = list(pool.map(lambda j: fetch_feed(client, j[0]), jobs))
 

@@ -1,0 +1,102 @@
+# Catalogue de sources candidates, à tester depuis TON réseau :
+#   veille check-feeds --catalog sources/catalog.yaml --out reports/sources.md
+# Puis copier dans config.yaml celles qui sont ✅ OK et utiles.
+#
+# note : "web" = URL confirmée par recherche web (oct. 2026), "à tester" = URL usuelle non confirmée.
+# kind : rss (défaut) | cisa_kev (JSON)
+
+agregateurs:
+  - {name: Hacker News (≥100 pts), url: "https://hnrss.org/frontpage?points=100", note: "connu, filtrable : ?points=, ?q=mot"}
+  - {name: Hacker News recherche LLM, url: "https://hnrss.org/newest?q=LLM&points=50", note: "hnrss permet des recherches par mot-clé"}
+  - {name: Lobsters, url: "https://lobste.rs/rss", note: "connu ; par tag : /t/security.rss"}
+  - {name: Lobsters security, url: "https://lobste.rs/t/security.rss", note: à tester}
+  - {name: Lobsters AI, url: "https://lobste.rs/t/ai.rss", note: à tester}
+
+tech:
+  - {name: LWN, url: "https://lwn.net/headlines/rss", note: connu}
+  - {name: The Register, url: "https://www.theregister.com/headlines.atom", note: connu}
+  - {name: Ars Technica IT, url: "https://feeds.arstechnica.com/arstechnica/technology-lab", note: connu}
+  - {name: Ars Technica (tout), url: "https://feeds.arstechnica.com/arstechnica/index", note: connu}
+  - {name: Phoronix, url: "https://www.phoronix.com/rss.php", note: "web ; protégé Cloudflare, peut renvoyer 403"}
+  - {name: The Verge, url: "https://www.theverge.com/rss/index.xml", note: à tester}
+  - {name: GitHub Blog, url: "https://github.blog/feed/", note: à tester}
+  - {name: Cloudflare Blog, url: "https://blog.cloudflare.com/rss/", note: "web ; 403 signalés depuis des VPS"}
+  - {name: Kubernetes Blog, url: "https://kubernetes.io/feed.xml", note: web}
+  - {name: InfoQ, url: "https://feed.infoq.com/", note: à tester}
+  - {name: Julia Evans, url: "https://jvns.ca/atom.xml", note: à tester}
+  - {name: Hacker News Show HN, url: "https://hnrss.org/show?points=50", note: "outils/projets"}
+
+tech_fr:
+  - {name: Next, url: "https://next.ink/feed/", note: "web (via beta.next.ink/feed) ; flux tronqué pour abonnés"}
+  - {name: LinuxFr dépêches, url: "https://linuxfr.org/news.atom", note: "à tester ; alternative web : https://linuxfr.org/backend/news/rss20.rss"}
+  - {name: Korben, url: "https://korben.info/feed", note: web}
+  - {name: LeMagIT, url: "https://www.lemagit.fr/feed/all.xml", note: web}
+  - {name: Le Monde Informatique, url: "https://www.lemondeinformatique.fr/flux-rss/thematique/toutes-les-actualites/rss.xml", note: à tester}
+
+ia:
+  - {name: Hugging Face Blog, url: "https://huggingface.co/blog/feed.xml", note: "web ; items sans <link> (géré : repli sur guid)"}
+  - {name: Simon Willison, url: "https://simonwillison.net/atom/everything/", note: connu}
+  - {name: OpenAI News, url: "https://openai.com/news/rss.xml", note: "web, officiel"}
+  - {name: Google DeepMind, url: "https://deepmind.google/blog/rss.xml", note: "web, officiel"}
+  - {name: Google Research, url: "https://research.google/blog/rss/", note: à tester}
+  - {name: Anthropic News (non officiel), url: "https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_news_rss.xml", note: "web ; Anthropic n'a pas de flux officiel"}
+  - {name: Anthropic Engineering (non officiel), url: "https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_engineering_rss.xml", note: web}
+  - {name: Anthropic News (Olshansk), url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/refs/heads/main/feeds/feed_anthropic.xml", note: "web ; dépôt qui génère des flux pour blogs sans RSS"}
+  - {name: Import AI (Jack Clark), url: "https://importai.substack.com/feed", note: "à tester ; Substack = /feed"}
+  - {name: Latent Space, url: "https://www.latent.space/feed", note: à tester}
+  - {name: Interconnects (N. Lambert), url: "https://www.interconnects.ai/feed", note: à tester}
+  - {name: Sebastian Raschka, url: "https://magazine.sebastianraschka.com/feed", note: à tester}
+  - {name: BAIR Blog, url: "https://bair.berkeley.edu/blog/feed.xml", note: à tester}
+  - {name: MIT Tech Review IA, url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", note: à tester}
+  - {name: ActuIA (FR), url: "https://www.actuia.com/feed/", note: à tester}
+  - {name: r/LocalLLaMA, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", note: "web : www.reddit.com/.rss marche, old.reddit exige un login depuis 07/2026 ; 403 possibles"}
+  - {name: r/MachineLearning, url: "https://www.reddit.com/r/MachineLearning/top/.rss?t=day", note: "idem Reddit"}
+
+ia_recherche:
+  - {name: arXiv cs.CL, url: "https://rss.arxiv.org/rss/cs.CL", note: "web, officiel ; vide le week-end"}
+  - {name: arXiv cs.AI, url: "https://rss.arxiv.org/rss/cs.AI", note: web}
+  - {name: arXiv cs.LG, url: "https://rss.arxiv.org/rss/cs.LG", note: "web ; très volumineux"}
+  - {name: arXiv cs.CR (sécu), url: "https://rss.arxiv.org/rss/cs.CR", note: web}
+
+cyber:
+  - {name: CISA KEV (JSON), url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", kind: cisa_kev, note: "web, officiel ; les flux RSS CISA sont retirés depuis 05/2025"}
+  - {name: BleepingComputer, url: "https://www.bleepingcomputer.com/feed/", note: web}
+  - {name: The Hacker News, url: "https://feeds.feedburner.com/TheHackersNews", note: web}
+  - {name: Krebs on Security, url: "https://krebsonsecurity.com/feed/", note: connu}
+  - {name: Schneier on Security, url: "https://www.schneier.com/blog/atom.xml", note: web}
+  - {name: SANS ISC diary, url: "https://isc.sans.edu/rssfeed_full.xml", note: web}
+  - {name: Google Project Zero, url: "https://googleprojectzero.blogspot.com/feeds/posts/default", note: web}
+  - {name: The Register sécurité, url: "https://www.theregister.com/security/headlines.atom", note: "web (variante .rss)"}
+  - {name: Cisco Talos, url: "https://blog.talosintelligence.com/rss/", note: à tester}
+  - {name: Unit 42, url: "https://unit42.paloaltonetworks.com/feed/", note: à tester}
+  - {name: Securelist (Kaspersky), url: "https://securelist.com/feed/", note: à tester}
+  - {name: Microsoft MSRC blog, url: "https://msrc.microsoft.com/blog/feed", note: à tester}
+  - {name: SecurityWeek, url: "https://www.securityweek.com/feed/", note: à tester}
+  - {name: The Record, url: "https://therecord.media/feed", note: à tester}
+  - {name: Dark Reading, url: "https://www.darkreading.com/rss.xml", note: à tester}
+  - {name: Exploit-DB, url: "https://www.exploit-db.com/rss.xml", note: "à tester ; très bruité"}
+  - {name: CISA (ancien RSS, retiré), url: "https://www.cisa.gov/cybersecurity-advisories/all.xml", note: "web : retiré officiellement 05/2025 — garder pour vérifier"}
+
+cyber_fr:
+  - {name: CERT-FR (tout), url: "https://www.cert.ssi.gouv.fr/feed/", note: "web, officiel"}
+  - {name: CERT-FR SCADA, url: "https://www.cert.ssi.gouv.fr/feed/scada/", note: "web, officiel"}
+  - {name: CERT-FR Alertes, url: "https://www.cert.ssi.gouv.fr/alerte/feed/", note: "à tester ; flux segmenté annoncé mais URL non confirmée"}
+  - {name: CERT-FR Avis, url: "https://www.cert.ssi.gouv.fr/avis/feed/", note: à tester}
+  - {name: CERT-FR Menaces & incidents (CTI), url: "https://www.cert.ssi.gouv.fr/cti/feed/", note: à tester}
+  - {name: CERT-FR Actualités, url: "https://www.cert.ssi.gouv.fr/actualite/feed/", note: à tester}
+  - {name: Cert Santé (cyberveille), url: "https://cyberveille.esante.gouv.fr/rss.xml", note: "à tester ; sinon : veille discover cyberveille.esante.gouv.fr"}
+  - {name: Zataz, url: "https://www.zataz.com/feed/", note: à tester}
+  - {name: LeMagIT sécurité, url: "https://www.lemagit.fr/rss/ContentSyndication.xml", note: "à tester ; sinon : veille discover lemagit.fr"}
+
+homelab:
+  - {name: Self-Host Weekly, url: "https://selfh.st/weekly/rss/", note: web}
+  - {name: r/selfhosted, url: "https://www.reddit.com/r/selfhosted/top/.rss?t=day", note: "Reddit (cf. note)"}
+  - {name: r/homelab, url: "https://www.reddit.com/r/homelab/top/.rss?t=day", note: "Reddit (cf. note)"}
+  - {name: Home Assistant blog, url: "https://www.home-assistant.io/atom.xml", note: à tester}
+
+# Suivi de versions : tout dépôt GitHub expose https://github.com/<owner>/<repo>/releases.atom
+releases:
+  - {name: Ollama releases, url: "https://github.com/ollama/ollama/releases.atom", note: "format GitHub standard"}
+  - {name: Proxmox VE (pve-manager tags), url: "https://github.com/proxmox/pve-manager/tags.atom", note: "à tester ; miroir GitHub"}
+  - {name: Kubernetes releases, url: "https://github.com/kubernetes/kubernetes/releases.atom", note: "format GitHub standard"}
+  - {name: vLLM releases, url: "https://github.com/vllm-project/vllm/releases.atom", note: "format GitHub standard"}

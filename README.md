@@ -47,6 +47,34 @@ veille links kubernetes --days 30
 veille links --axis cyber --min-score 7
 ```
 
+### Vérifier les sources (à faire en premier)
+
+```bash
+veille check-feeds                                   # sources de config.yaml
+veille check-feeds --catalog sources/catalog.yaml --out reports/sources.md   # ~80 sources candidates
+veille check-feeds --catalog sources/catalog.yaml --group cyber_fr
+veille discover cyberveille.esante.gouv.fr next.ink  # trouver le flux d'un site
+```
+
+Chaque source est réellement téléchargée et parsée avec le même code que la collecte :
+
+| Verdict | Signification |
+|---|---|
+| ✅ OK | flux valide, articles avec titre + lien, dernier article < 30 j (`--stale-days`) |
+| 💤 INACTIF | flux valide mais plus alimenté |
+| 🔎 PAGE HTML | l'URL est une page, pas un flux — les flux déclarés par la page sont proposés |
+| ⚠️ VIDE | flux lisible mais aucun article exploitable |
+| ❌ ERREUR | 403 (anti-bot/Cloudflare), 404, 429, timeout, DNS… |
+
+`sources/catalog.yaml` : sources par thème (agrégateurs, tech, tech FR, IA, recherche, cyber, cyber FR, homelab, releases GitHub) avec une note `web` (URL confirmée par recherche) ou `à tester`. Copier les ✅ utiles dans `config.yaml`.
+
+Points connus :
+- **CISA** a retiré ses flux RSS (mai 2025) → source `kind: cisa_kev` qui lit le catalogue JSON des vulnérabilités activement exploitées.
+- **Anthropic** n'a pas de flux officiel → flux communautaires (GitHub) dans le catalogue.
+- **Hugging Face** : items sans `<link>` → repli automatique sur `<guid>`.
+- **Reddit** : `www.reddit.com/r/<sub>/.rss` fonctionne, `old.reddit.com` exige un login ; 403 possibles selon l'IP.
+- **Phoronix, Cloudflare** : protection anti-bot, 403 fréquents depuis des IP de datacenter (moins depuis une IP résidentielle).
+
 ### Planification
 
 cron :

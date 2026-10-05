@@ -11,6 +11,8 @@ class Feed:
     name: str
     url: str
     weight: float = 1.0
+    kind: str = "rss"  # rss (RSS/Atom) | cisa_kev (catalogue JSON CISA)
+    note: str = ""
 
 
 @dataclass
@@ -54,7 +56,14 @@ class Config:
 
 
 def _feeds(raw: list[dict] | None) -> list[Feed]:
-    return [Feed(**f) for f in raw or []]
+    fields = Feed.__dataclass_fields__
+    return [Feed(**{k: v for k, v in f.items() if k in fields}) for f in raw or []]
+
+
+def load_catalog(path: str | Path) -> dict[str, list[Feed]]:
+    """Catalogue de sources candidates : {groupe: [Feed]}."""
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return {group: _feeds(feeds) for group, feeds in raw.items()}
 
 
 def load_config(path: str | Path) -> Config:

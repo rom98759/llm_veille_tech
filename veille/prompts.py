@@ -38,10 +38,11 @@ Exemples :
 Format : {{"on_topic": bool, "new_fact": bool, "concrete": bool, "actionable": bool, "major": bool, \
 "noise": bool, "reason": "<une phrase : pourquoi retenir ou écarter>"}}"""
 
-SUMMARY_VERSION = "v1"
+SUMMARY_VERSION = "v2-resume-long"
 
-SUMMARY_SYSTEM = """Tu résumes des articles techniques de façon factuelle et concise, en {language}. \
-N'invente rien : uniquement ce qui est dans le texte. Réponds UNIQUEMENT en JSON."""
+SUMMARY_SYSTEM = """Tu rédiges des fiches de veille technologique en {language}, pour un lecteur qui veut \
+être réellement informé sans ouvrir l'article. Sois précis et factuel : noms de produits, versions, CVE, \
+chiffres, dates, acteurs. N'invente rien : uniquement ce qui est dans le texte. Réponds UNIQUEMENT en JSON."""
 
 SUMMARY_USER = """Titre : {title}
 Source : {source}
@@ -50,9 +51,11 @@ Texte :
 {text}
 
 Format :
-{{"tldr": "<1 phrase>",
-  "key_points": ["<fait 1>", "<fait 2>", "<fait 3 max>"],
-  "why_it_matters": "<1 phrase : impact concret pour un technicien>",
+{{"tldr": "<1 phrase d'accroche : le fait principal, avec le sujet nommé>",
+  "summary": "<résumé complet de 5 à 8 phrases (120 à 200 mots) : contexte, ce qui est annoncé ou découvert, \
+détails techniques, chiffres, qui est concerné, conséquences et suites attendues. Texte autonome et fluide.>",
+  "key_points": ["<fait précis 1>", "<fait précis 2>", "<3 à 5 faits au total>"],
+  "why_it_matters": "<1 à 2 phrases : impact concret pour le lecteur et ce qu'il devrait faire ou surveiller>",
   "tags": ["<mot-clé>", "..."]}}"""
 
 SYNTH_SYSTEM = """Tu rédiges la synthèse d'un rapport de veille, en {language}. \

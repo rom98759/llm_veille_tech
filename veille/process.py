@@ -87,7 +87,8 @@ def summarize(llm: LLM, cfg: Config, item: dict) -> dict:
     )
     return {
         "tldr": str(data.get("tldr", "")),
-        "key_points": [str(p) for p in data.get("key_points", [])][:3],
+        "summary": str(data.get("summary", "")),
+        "key_points": [str(p) for p in data.get("key_points", [])][:5],
         "why_it_matters": str(data.get("why_it_matters", "")),
         "tags": [str(t) for t in data.get("tags", [])][:6],
     }
@@ -97,7 +98,7 @@ def synthesize(llm: LLM, cfg: Config, axis: Axis, kept: list[dict]) -> str:
     if not kept:
         return ""
     lines = [
-        f"[{i}] {it['title']} ({it['source']}) — {it['digest']['tldr']} {it['digest']['why_it_matters']}"
+        f"[{i}] {it['title']} ({it['source']}) — {it['digest'].get('summary') or it['digest']['tldr']}"[:900]
         for i, it in enumerate(kept, 1)
     ]
     return llm.chat(
@@ -194,7 +195,8 @@ def process_axis(llm: LLM, cfg: Config, conn: sqlite3.Connection, axis: Axis, si
         if isinstance(res, Exception):
             log.warning("résumé échoué « %s » : %s", it["title"], res)
             it["digest"] = {
-                "tldr": (it.get("summary") or "")[:300],
+                "tldr": "",
+                "summary": (it.get("summary") or "")[:1200],
                 "key_points": [],
                 "why_it_matters": "",
                 "tags": [],

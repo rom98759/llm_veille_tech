@@ -29,10 +29,12 @@ _Rien de notable sur la période._
 <a id="{{ a.key }}-{{ loop.index }}"></a>
 ### {{ loop.index }}. [{{ it.title }}]({{ it.url }})
 
-`{{ it.source }}` · {{ it.published[:10] }} · pertinence **{{ it.llm_score | fmt_score }}/10**{% if it.coverage and it.coverage > 1 %} · couvert par {{ it.coverage }} sources{% endif %}{% if it.digest.tags %} · {{ it.digest.tags | map("tag") | join(" ") }}{% endif %}{% if it.digest.text_source == "rss" %} · ⚠ résumé sur extrait RSS{% endif %}
+`{{ it.source }}` · {{ it.published[:10] }}{% if it.coverage and it.coverage > 1 %} · couvert par {{ it.coverage }} sources{% endif %}{% if it.digest.tags %} · {{ it.digest.tags | map("tag") | join(" ") }}{% endif %}{% if it.digest.text_source == "rss" %} · ⚠ résumé sur extrait RSS{% endif %} · pertinence {{ it.llm_score | fmt_score }}/10
 
-**TL;DR** — {{ it.digest.tldr }}
-{% for p in it.digest.key_points %}
+{% if it.digest.tldr %}**{{ it.digest.tldr }}**
+{% endif %}{% if it.digest.summary %}
+{{ it.digest.summary }}
+{% endif %}{% for p in it.digest.key_points %}
 - {{ p }}
 {%- endfor %}
 {% if it.digest.why_it_matters %}

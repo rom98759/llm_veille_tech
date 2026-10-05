@@ -4,6 +4,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 
 ## [Non publié]
 
+### Modifié
+- Nouveau design du rapport et de l'historique (maquette Claude Design) : titre et résumé mis en avant, note de pertinence en information secondaire, bloc « L'essentiel », navigation entre rapports, historique groupé par mois avec répartition par axe.
+- Résumé par article bien plus complet : champ `summary` de 5 à 8 phrases en plus de l'accroche, jusqu'à 5 points clés (`SUMMARY_VERSION` incrémentée : les résumés en cache sont régénérés).
+
 ## [0.1.0] - 2026-10-05
 
 ### Ajouté

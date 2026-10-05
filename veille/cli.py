@@ -16,7 +16,10 @@ def cmd_collect(cfg, conn, args):
 
 def cmd_report(cfg, conn, args):
     data = process.run(cfg, conn, args.axis)
-    md, html, js = report.render(data, cfg.reports_dir)
+    last = conn.execute("SELECT path_html FROM reports ORDER BY created_at DESC LIMIT 1").fetchone()
+    number = conn.execute("SELECT COUNT(*) FROM reports").fetchone()[0] + 1
+    prev = Path(last["path_html"]).name if last else None
+    md, html, js = report.render(data, cfg.reports_dir, prev=prev, number=number)
     db.save_report(conn, data["generated_at"], str(md), str(html), data)
     reports = [dict(r) for r in conn.execute("SELECT * FROM reports ORDER BY created_at DESC")]
     index = report.render_index(reports, cfg.reports_dir)

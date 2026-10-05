@@ -4,46 +4,103 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Historique de veille</title>
-<meta name="description" content="{{ entries|length }} rapports de veille technologique">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="description" content="{{ count }} rapports de veille technologique">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111418'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <script>try { var t = localStorage.getItem("veille-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
 {% include "_theme.css" %}
-main { max-width: 860px; margin: 0 auto; padding: 2rem var(--gutter); }
-input[type=search] { width: 100%; font: inherit; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--fg); margin: 1rem 0; }
-ol { list-style: none; padding: 0; margin: 0; }
-li { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1.1rem; margin-bottom: .8rem; }
-li h2 { font-size: var(--step-1); display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
-.axes { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0; }
-li ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: var(--step--1); }
-.hidden { display: none; }
+main { padding-block: 44px 64px; }
+h1 { font-size: clamp(34px, 5vw, 44px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 8px; }
+.intro { margin: 0 0 28px; color: var(--muted); font-size: 18px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.filters input { flex: 1 1 320px; min-width: 0; height: 48px; }
+.month { margin: 28px 0 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+.report { display: block; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; color: var(--fg); }
+.report:hover { text-decoration: none; color: var(--fg); border-color: var(--muted); }
+.report.latest { border-color: var(--fg); }
+.report .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.report .date { font-size: 20px; font-weight: 700; }
+.report .date::first-letter { text-transform: uppercase; }
+.badge { font: 12px var(--mono); color: var(--bg); background: var(--fg); border-radius: 6px; padding: 1px 6px; }
+.report .n { margin-left: auto; font: 13px var(--mono); color: var(--muted); }
+.dist { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 14px 0 6px; gap: 2px; background: var(--soft); }
+.dist span { background: var(--axis); }
+.report ul { margin: 12px 0 0; padding-left: 18px; font-size: 15px; color: var(--fg2); }
+.report li { margin: 3px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 28px; font-size: 14px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
-<main>
-  <h1>Historique de veille</h1>
-  <p class="muted">{{ entries|length }} rapports · <a href="latest.html">dernier rapport</a></p>
-  <input type="search" id="q" placeholder="Filtrer (date, sujet, axe)…" aria-label="Filtrer les rapports">
-  <ol>
-    {% for e in entries %}
-    <li>
-      <h2><a href="{{ e.file }}">{{ e.date }}</a> <span class="muted small">{{ e.kept }} articles · {{ e.model }}</span></h2>
-      <div class="axes">
-        {% for a in e.axes %}<span class="pill axis-color" style="--hue: {{ a.hue }}"><span class="dot"></span>{{ a.title }} {{ a.n }}</span>{% endfor %}
-      </div>
-      {% if e.top %}<ul>{% for t in e.top %}<li style="all:unset;display:list-item">{{ t }}</li>{% endfor %}</ul>{% endif %}
-    </li>
-    {% else %}
-    <li class="muted">Aucun rapport.</li>
-    {% endfor %}
-  </ol>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M17.5 17.5L24 24"/><path d="M8.5 12h7M12 8.5v7"/></svg>
+      Veille <span class="tag">local</span>
+    </a>
+    <nav class="site-nav" aria-label="Navigation principale">
+      <a href="latest.html">Dernier rapport</a>
+      <a href="index.html" aria-current="page">Historique</a>
+      <button class="icon-btn" id="theme" type="button" aria-label="Basculer le thème clair ou sombre">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 0 0 14z" fill="currentColor"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Historique</h1>
+  <p class="intro">{{ count }} rapport{% if count > 1 %}s{% endif %}, du plus récent au plus ancien.</p>
+  <form class="filters" role="search" onsubmit="return false">
+    <label for="q" class="sr-only">Filtrer les rapports</label>
+    <input id="q" class="field" type="search" placeholder="Filtrer : date, sujet, CVE, produit…">
+  </form>
+
+  {% for m in months %}
+  <section class="month-block">
+    <h2 class="month eyebrow">{{ m.label }}</h2>
+    <div class="grid">
+      {% for e in m.entries %}
+      <a class="report{% if e.latest %} latest{% endif %}" href="{{ e.file }}">
+        <div class="head">
+          <span class="date">{{ e.date }}</span>
+          {% if e.latest %}<span class="badge">dernier</span>{% endif %}
+          <span class="n">{{ e.kept }} articles · {{ e.time }}</span>
+        </div>
+        <div class="dist" role="img" aria-label="Répartition :{% for a in e.axes %} {{ a.title }} {{ a.n }}{% if not loop.last %},{% endif %}{% endfor %}">
+          {% for a in e.axes %}{% if a.n %}<span style="--axis: {{ a.color }}; flex: {{ a.n }}"></span>{% endif %}{% endfor %}
+        </div>
+        {% if e.top %}<ul>{% for t in e.top %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <p class="muted">Aucun rapport pour l'instant : lancer <code>veille run</code>.</p>
+  {% endfor %}
+
+  {% if legend %}
+  <div class="legend">{% for title, color in legend.items() %}<span><span class="swatch" style="--axis: {{ color }}"></span>{{ title }}</span>{% endfor %}</div>
+  {% endif %}
 </main>
+
 <script>
 (function () {
-  var q = document.getElementById("q"), items = Array.prototype.slice.call(document.querySelectorAll("main > ol > li"));
+  var root = document.documentElement;
+  document.getElementById("theme").addEventListener("click", function () {
+    var dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("veille-theme", root.dataset.theme); } catch (e) {}
+  });
+  var q = document.getElementById("q");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".report"));
+  var blocks = Array.prototype.slice.call(document.querySelectorAll(".month-block"));
   q.addEventListener("input", function () {
     var t = q.value.trim().toLowerCase();
-    items.forEach(function (li) { li.classList.toggle("hidden", !!t && li.textContent.toLowerCase().indexOf(t) === -1); });
+    cards.forEach(function (c) { c.classList.toggle("hidden", !!t && c.textContent.toLowerCase().indexOf(t) === -1); });
+    blocks.forEach(function (b) { b.classList.toggle("hidden", !b.querySelector(".report:not(.hidden)")); });
   });
 })();
 </script>

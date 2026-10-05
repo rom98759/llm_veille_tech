@@ -1,7 +1,8 @@
 """Étape 4 : rendu du rapport à partir des données (Markdown, HTML autonome, JSON) + index historique.
 
-Le HTML est rendu directement depuis les données (plus dérivé du Markdown) : chaque article est un
-<article> avec ses attributs data-*, ce qui permet cartes, couleurs par axe et filtres côté client.
+Le HTML est rendu directement depuis les données : chaque article est un <article> avec ses attributs
+data-*, ce qui permet cartes, couleurs par axe et filtres côté client. La hiérarchie de lecture met en
+avant le titre et le résumé ; la note de pertinence reste une information secondaire.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import html as htmllib
 import json
 import re
 import shutil
-import zlib
+from datetime import datetime
 from pathlib import Path
 
 import markdown
@@ -30,6 +31,13 @@ CRITERIA_LABELS = {
     "actionable": "actionnable",
     "major": "impact large",
 }
+# Couleurs des premiers axes (teintes et clartés distinctes), puis angle d'or pour les suivants.
+AXIS_COLORS = ["#1F5FD1", "#A34A0B", "#0E7268", "#7A3EB8", "#B0265E", "#5A6B00"]
+DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MONTHS = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+]  # fmt: skip
 
 
 # ---------- filtres Markdown (export texte) ----------
@@ -47,26 +55,36 @@ def md_inline(text: str | None) -> Markup:
     return Markup(m.group(1) if m else out)
 
 
-def score_class(score: float | None) -> str:
-    if score is None:
-        return "low"
-    return "high" if score >= 9 else "mid" if score >= 7 else "low"
+def md_block(text: str | None) -> Markup:
+    """Comme md_inline mais garde les paragraphes (résumé long)."""
+    return Markup(markdown.markdown(htmllib.escape(text or "")))
+
+
+def fmt_score(s) -> str:
+    if s is None:
+        return "–"
+    return f"{s:.0f}" if float(s).is_integer() else f"{s:.1f}".replace(".", ",")
+
+
+def long_date(iso: str) -> str:
+    d = datetime.fromisoformat(iso)
+    return f"{DAYS[d.weekday()]} {d.day} {MONTHS[d.month - 1]} {d.year}"
+
+
+def short_date(iso: str) -> str:
+    d = datetime.fromisoformat(iso)
+    return f"{DAYS[d.weekday()][:3]}. {d.day} {MONTHS[d.month - 1]}"
 
 
 env.filters["md_inline"] = md_inline
-env.filters["score_class"] = score_class
-env.filters["fmt_score"] = lambda s: "–" if s is None else (f"{s:.0f}" if float(s).is_integer() else f"{s:.1f}")
+env.filters["md_block"] = md_block
+env.filters["fmt_score"] = fmt_score
 
 
-def axis_hue(key: str, index: int | None = None) -> int:
-    """Teinte par axe, pour tout axe ajouté dans config.yaml.
-
-    Avec la position de l'axe : angle d'or depuis le bleu, teintes bien séparées pour les premiers axes.
-    Sans : dérivée d'un hash de la clé (stable mais collisions possibles).
-    """
-    if index is not None:
-        return round(215 + index * 137.508) % 360
-    return zlib.crc32(key.encode()) % 360
+def axis_color(index: int) -> str:
+    if index < len(AXIS_COLORS):
+        return AXIS_COLORS[index]
+    return f"hsl({round(215 + index * 137.508) % 360} 60% 38%)"
 
 
 def _cite_link(axis: str, n: int, item: dict, seen: set[str], label: str) -> str:
@@ -80,7 +98,7 @@ def _cite_link(axis: str, n: int, item: dict, seen: set[str], label: str) -> str
 
 
 def link_citations(html: str, axes: dict[str, dict], default_axis: str | None, seen: set[str]) -> Markup:
-    """[n] (synthèse d'axe) et [axe:n] (résumé exécutif) -> pastilles cliquables avec aperçu."""
+    """[n] (synthèse d'axe) -> pastilles cliquables avec aperçu au survol et ancre de retour."""
 
     def repl(m: re.Match) -> str:
         axis, n = (m.group(1) or default_axis), int(m.group(2))
@@ -93,44 +111,70 @@ def link_citations(html: str, axes: dict[str, dict], default_axis: str | None, s
     return Markup(re.sub(r"\[(?:([\w-]+):)?(\d+)\]", repl, html))
 
 
-def _context(data: dict) -> dict:
+def executive_items(text: str | None, axes: dict[str, dict]) -> list[dict]:
+    """Puces du résumé exécutif -> [{html, cites: [{href, label, color, title}]}]."""
+    lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
+    bullet = re.compile(r"^([-*•]|\d+[.)])\s+")
+    bullets = [bullet.sub("", ln) for ln in lines if bullet.match(ln)]
+    out = []
+    for b in bullets or ([" ".join(lines)] if lines else []):
+        cites = []
+        for axis, n in re.findall(r"\[([\w-]+):(\d+)\]", b):
+            items = axes.get(axis, {}).get("items", [])
+            if 1 <= int(n) <= len(items):
+                cites.append(
+                    {
+                        "href": f"#{axis}-{n}",
+                        "label": f"{axis} {n}",
+                        "color": axes[axis]["color"],
+                        "title": items[int(n) - 1]["title"],
+                    }
+                )
+        clean = re.sub(r"\s*\[[\w-]+:\d+\]", "", b).strip()
+        out.append({"html": md_inline(clean), "cites": cites})
+    return out
+
+
+def _context(data: dict, prev: str | None = None, number: int | None = None) -> dict:
     data = copy.deepcopy(data)  # ne pas polluer le JSON exporté avec les champs de présentation
     axes = data["axes"]
     by_key = {a["key"]: a for a in axes}
     seen: set[str] = set()
     for i, a in enumerate(axes):
-        a["hue"] = axis_hue(a["key"], i)
-        for i, it in enumerate(a["items"], 1):
-            it["anchor"] = f"{a['key']}-{i}"
+        a["color"] = axis_color(i)
+        for j, it in enumerate(a["items"], 1):
+            it["anchor"] = f"{a['key']}-{j}"
             crit = it.get("criteria") or {}
             it["criteria_labels"] = [label for k, label in CRITERIA_LABELS.items() if crit.get(k)]
         a["synthesis_html"] = link_citations(md_inline(a["synthesis"]), by_key, a["key"], seen)
-    exec_html = link_citations(
-        markdown.markdown(htmllib.escape(data.get("executive_summary") or "")), by_key, None, seen
-    )
     sources = sorted({it["source"] for a in axes for it in a["items"] + a["others"]})
     plain_exec = re.sub(r"\[[\w-]*:?\d+\]|^[-*]\s*", "", data.get("executive_summary") or "", flags=re.M)
     return {
         **data,
         "date": data["generated_at"][:10],
+        "date_long": long_date(data["generated_at"]),
+        "since_label": short_date(data["since"]) if data.get("since") else "",
+        "until_label": short_date(data["generated_at"]),
+        "number": number,
+        "prev": prev,
         "total_kept": sum(len(a["items"]) for a in axes),
+        "total_scored": sum(len(a["items"]) + len(a["others"]) for a in axes),
         "total_collected": sum(a["total_collected"] for a in axes),
-        "executive_html": exec_html,
+        "exec_items": executive_items(data.get("executive_summary"), by_key),
         "sources": sources,
         "description": " ".join(plain_exec.split())[:200],
     }
 
 
-def render(data: dict, out_dir: Path) -> tuple[Path, Path, Path]:
-    ctx = _context(data)
-    md = env.get_template("report.md.j2").render(**ctx)
-    html = env.get_template("report.html.j2").render(**ctx)
-
+def render(data: dict, out_dir: Path, prev: str | None = None, number: int | None = None) -> tuple[Path, Path, Path]:
+    """Écrit le rapport en .md/.html/.json. `prev` : nom du fichier HTML du rapport précédent (navigation)."""
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = f"veille-{data['generated_at'][:16].replace(':', '')}"
     paths = (out_dir / f"{stem}.md", out_dir / f"{stem}.html", out_dir / f"{stem}.json")
-    paths[0].write_text(md, encoding="utf-8")
-    paths[1].write_text(html, encoding="utf-8")
+    ctx = _context(data, prev, number)
+    ctx["files"] = {"md": paths[0].name, "json": paths[2].name}
+    paths[0].write_text(env.get_template("report.md.j2").render(**ctx), encoding="utf-8")
+    paths[1].write_text(env.get_template("report.html.j2").render(**ctx), encoding="utf-8")
     paths[2].write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     shutil.copyfile(paths[2], out_dir / "latest.json")
     (out_dir / "latest.html").write_text(
@@ -140,24 +184,37 @@ def render(data: dict, out_dir: Path) -> tuple[Path, Path, Path]:
 
 
 def render_index(reports: list[dict], out_dir: Path) -> Path:
-    """Index de l'historique à partir de la table `reports` (le JSON complet de chaque rapport y est gardé)."""
-    entries = []
-    for r in reports:
+    """Index de l'historique depuis la table `reports` (du plus récent au plus ancien)."""
+    months: list[dict] = []
+    legend: dict[str, str] = {}
+    for pos, r in enumerate(reports):
         data = json.loads(r["data"])
-        items = [(it["llm_score"] or 0, it["title"], a["title"]) for a in data["axes"] for it in a["items"]]
-        entries.append(
+        items = [(it["llm_score"] or 0, it["title"]) for a in data["axes"] for it in a["items"]]
+        d = datetime.fromisoformat(data["generated_at"])
+        month = f"{MONTHS[d.month - 1]} {d.year}"
+        if not months or months[-1]["label"] != month:
+            months.append({"label": month, "entries": []})
+        axes = [
+            {"title": a["title"], "key": a["key"], "n": len(a["items"]), "color": axis_color(i)}
+            for i, a in enumerate(data["axes"])
+        ]
+        for a in axes:
+            legend.setdefault(a["title"], a["color"])
+        months[-1]["entries"].append(
             {
                 "file": Path(r["path_html"]).name,
-                "date": data["generated_at"][:16].replace("T", " "),
+                "date": short_date(data["generated_at"]),
+                "time": data["generated_at"][11:16],
                 "model": data.get("model", ""),
                 "kept": len(items),
-                "axes": [
-                    {"title": a["title"], "n": len(a["items"]), "hue": axis_hue(a["key"], i)}
-                    for i, a in enumerate(data["axes"])
-                ],
-                "top": [t for _, t, _ in sorted(items, key=lambda x: -x[0])[:3]],
+                "latest": pos == 0,
+                "axes": axes,
+                "top": [t for _, t in sorted(items, key=lambda x: -x[0])[:3]],
             }
         )
     path = out_dir / "index.html"
-    path.write_text(env.get_template("index.html.j2").render(entries=entries), encoding="utf-8")
+    path.write_text(
+        env.get_template("index.html.j2").render(months=months, count=len(reports), legend=legend),
+        encoding="utf-8",
+    )
     return path

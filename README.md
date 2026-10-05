@@ -68,7 +68,8 @@ veille export-opml --out feeds.opml   # flux au format OPML (Miniflux, FreshRSS�
 
 Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique de tous les rapports), `latest.html` (redirige vers le dernier) et `latest.json`.
 
-Le rapport HTML : cartes par article (note, source, date relative, nb de sources couvrant le sujet, critères validés, tags), couleur par axe, sommaire fixe, recherche + filtres (note minimale, source, axe, clic sur un tag), citations `[n]` en pastilles avec aperçu au survol et retour depuis la fiche, thème clair/sombre, impression propre (tout déplié, URL des liens affichées).
+Le rapport HTML est pensé pour **s'informer** : chaque fiche met en avant le **titre**, une phrase d'accroche puis un **résumé complet de 5 à 8 phrases** (contexte, faits, détails techniques, conséquences), les points clés et « pourquoi c'est important ». La note de pertinence reste discrète (elle sert au tri, pas à la lecture).
+Autour : bloc « L'essentiel » (résumé exécutif avec renvois vers les fiches), synthèse par axe avec citations `[n]` cliquables, couleur par axe, sommaire fixe, recherche et filtres (source, pertinence, axe, clic sur un tag), liens écartés avec la raison, navigation vers le rapport précédent, thème clair/sombre, impression propre. Polices IBM Plex si installées sur le poste, sinon police système.
 
 ### Vérifier les sources (à faire en premier)
 

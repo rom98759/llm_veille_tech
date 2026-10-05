@@ -30,7 +30,8 @@ def _item(n, score, **kw):
         "coverage": 1,
         "related": [],
         "digest": {
-            "tldr": "Résumé **gras**",
+            "tldr": "Accroche **gras**",
+            "summary": "Premier paragraphe.\n\nSecond paragraphe.",
             "key_points": ["a"],
             "why_it_matters": "b",
             "tags": ["cve"],
@@ -90,7 +91,7 @@ class Collector(HTMLParser):
 
 def test_html_structure_anchors_and_escaping(tmp_path):
     data = sample()
-    _, html_path, js = report.render(data, tmp_path)
+    _, html_path, js = report.render(data, tmp_path, prev="veille-avant.html", number=7)
     html = html_path.read_text()
     p = Collector()
     p.feed(html)
@@ -100,11 +101,19 @@ def test_html_structure_anchors_and_escaping(tmp_path):
     assert html.count('<article class="card"') == 3
     assert 'data-axis="cyber" data-score="9.5"' in html
     # citations : [7] et [cyber:9] n'existent pas -> laissées telles quelles
-    assert 'href="#cyber-3"' in html and "[7]" in html and "[cyber:9]" in html
+    # synthèse : [7] n'existe pas -> laissé tel quel ; résumé exécutif : [cyber:9] invalide -> retiré, pas de pastille
+    assert 'href="#cyber-3"' in html and "[7]" in html and "[cyber:9]" not in html
+    assert html.count('class="chip"') == 1 and "Autre</span>" in html
     assert 'id="cite-cyber-1"' in html and 'href="#cite-cyber-1"' in html  # aller-retour synthèse <-> fiche
     # contenu LLM/flux échappé : seuls nos 2 scripts (thème + interactions)
     assert p.scripts == 2 and "<img src=x" not in html and "&lt;script&gt;alert(1)" in html
     assert "<strong>gras</strong>" in html
+    # titre et résumé complet mis en avant, note en information secondaire
+    assert "<p>Premier paragraphe.</p>" in html and "<p>Second paragraphe.</p>" in html
+    card = html[html.index('id="cyber-1"') :]
+    assert card.index("<h3>") < card.index('class="lead"') < card.index('class="summary"')
+    assert '<span class="score"' in card and "9,5/10" in card
+    assert 'href="veille-avant.html"' in html and "Rapport n° 7" in html
     assert "résumé sur extrait RSS" in html
     # autonome, ouvrable en file:// : aucune ressource externe chargée
     assert not re.search(r"<script[^>]+src=|<link[^>]+stylesheet|@import|url\(http", html)
@@ -122,11 +131,20 @@ def test_index_lists_reports(tmp_path):
     data = sample()
     _, html_path, _ = report.render(data, tmp_path)
     idx = report.render_index([{"data": json.dumps(data), "path_html": str(html_path)}], tmp_path).read_text()
-    assert html_path.name in idx and "Titre 1" in idx
+    assert html_path.name in idx and "Titre 1" in idx and ">dernier<" in idx
 
 
-def test_axis_hue_stable():
-    assert report.axis_hue("cyber") == report.axis_hue("cyber") and 0 <= report.axis_hue("x") < 360
+def test_axis_colors_distinct_then_generated():
+    colors = [report.axis_color(i) for i in range(8)]
+    assert len(set(colors)) == 8 and colors[0] == "#1F5FD1" and colors[7].startswith("hsl(")
+
+
+def test_executive_items_parsing():
+    axes = {"cyber": {"color": "#000", "items": [{"title": "T1"}]}}
+    items = report.executive_items("Intro ignorée\n- Fait **un** [cyber:1]\n* Fait deux [cyber:5]", axes)
+    assert [str(i["html"]) for i in items] == ["Fait <strong>un</strong>", "Fait deux"]
+    assert items[0]["cites"][0]["href"] == "#cyber-1" and items[1]["cites"] == []
+    assert report.executive_items("Texte libre sans puce", axes)[0]["html"] == "Texte libre sans puce"
 
 
 def test_parse_rss_atom_and_dates():

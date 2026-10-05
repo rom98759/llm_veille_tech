@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10"]
+dev = ["pytest>=8,<10", "ruff>=0.16,<0.17", "pre-commit>=4,<5"]
 
 [project.scripts]
 veille = "veille.cli:main"
@@ -27,3 +27,23 @@ include = ["veille*"]
 
 [tool.setuptools.package-data]
 veille = ["templates/*", "prompts/*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["bench"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+# RUF001/002/003 : texte en français (apostrophes typographiques, ×, «») volontaire
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"veille/prompts.py" = ["E501"]  # prompts : lignes longues assumées
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

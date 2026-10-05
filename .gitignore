@@ -5,3 +5,4 @@ data/
 reports/
 config.yaml
 .pytest_cache/
+.ruff_cache/

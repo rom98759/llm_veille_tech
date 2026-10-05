@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS article_axes (
     heuristic    REAL,                      -- score de pré-tri
     llm_score    REAL,                      -- pertinence jugée par le LLM pour cet axe
     llm_reason   TEXT,
+    llm_detail   TEXT,                      -- JSON des critères de la grille
+    llm_model    TEXT,                      -- clé de cache « modèle|version de prompt »
     PRIMARY KEY (article_id, axis)
 );
 CREATE TABLE IF NOT EXISTS reports (
@@ -37,11 +39,20 @@ CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published);
 """
 
 
+MIGRATIONS = {  # colonnes ajoutées après coup : (table, colonne) -> type
+    ("article_axes", "llm_detail"): "TEXT",
+    ("article_axes", "llm_model"): "TEXT",
+}
+
+
 def connect(path: Path) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    for (table, col), typ in MIGRATIONS.items():
+        if col not in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
     return conn
 
 
@@ -66,12 +77,23 @@ def link_axis(conn: sqlite3.Connection, article_id: int, axis: str) -> None:
 
 def articles_for_axis(conn: sqlite3.Connection, axis: str, since_iso: str) -> list[sqlite3.Row]:
     return conn.execute(
-        """SELECT a.*, aa.heuristic, aa.llm_score, aa.llm_reason FROM articles a
+        """SELECT a.*, aa.heuristic, aa.llm_score, aa.llm_reason, aa.llm_detail, aa.llm_model FROM articles a
            JOIN article_axes aa ON aa.article_id = a.id
            WHERE aa.axis = ? AND a.published >= ?
            ORDER BY a.published DESC""",
         (axis, since_iso),
     ).fetchall()
+
+
+def prune(conn: sqlite3.Connection, before_iso: str) -> int:
+    """Supprime les articles publiés avant la date (les rapports gardent leur JSON complet)."""
+    conn.execute(
+        "DELETE FROM article_axes WHERE article_id IN (SELECT id FROM articles WHERE published < ?)", (before_iso,)
+    )
+    n = conn.execute("DELETE FROM articles WHERE published < ?", (before_iso,)).rowcount
+    conn.commit()
+    conn.execute("VACUUM")
+    return n
 
 
 def save_report(conn: sqlite3.Connection, created_at: str, md: str, html: str, data: dict) -> None:

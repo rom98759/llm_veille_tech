@@ -1,7 +1,12 @@
-"""Prompts. Courts et très cadrés : pensés pour des modèles 7-9B en local."""
+"""Prompts. Courts et très cadrés : pensés pour des petits modèles locaux (4-9B)."""
 
-JUDGE_SYSTEM = """Tu es un analyste de veille technologique. Tu notes la pertinence d'un article \
-pour un lecteur précis. Réponds UNIQUEMENT en JSON."""
+# Notation par grille de critères oui/non plutôt qu'une note libre 0-10 :
+# les petits modèles saturent une note libre (8-10 partout), ils répondent mieux à des questions fermées.
+# La note finale est calculée côté Python (process.JUDGE_WEIGHTS). Changer la grille => incrémenter la version.
+JUDGE_VERSION = "grille-v1"
+
+JUDGE_SYSTEM = """Tu es un analyste de veille technologique exigeant. La plupart des articles NE méritent PAS \
+d'être retenus : sois strict, réponds "false" en cas de doute. Réponds UNIQUEMENT en JSON."""
 
 JUDGE_USER = """Profil du lecteur :
 {profile}
@@ -13,9 +18,27 @@ Article :
 - Source : {source}
 - Extrait : {summary}
 
-Note de 0 à 10 l'intérêt de cet article pour ce lecteur sur cet axe.
-10 = information majeure, nouvelle et actionnable. 0 = hors sujet, marketing ou sans substance.
-Format : {{"score": <entier 0-10>, "reason": "<une phrase>"}}"""
+Réponds à chaque question par true ou false :
+- on_topic : l'article traite directement de l'axe « {axis_title} » (pas juste une mention) ;
+- new_fact : il annonce un fait nouveau (sortie, faille, incident, résultat, décision), pas une opinion, \
+un tutoriel générique, une rétrospective ou une promotion ;
+- concrete : il contient des éléments techniques précis (versions, CVE, chiffres, noms de produits) ;
+- actionable : le lecteur décrit dans le profil a quelque chose à faire ou à surveiller suite à cet article ;
+- major : l'impact dépasse un cas isolé (largement utilisé, exploité activement, rupture technique) ;
+- noise : c'est du marketing, un contenu sponsorisé, une levée de fonds, une rumeur ou un listicle.
+
+Exemples :
+- « CVE-2026-1234 : RCE exploitée activement dans OpenSSH 9.x, correctif publié » (axe cyber) → \
+{{"on_topic": true, "new_fact": true, "concrete": true, "actionable": true, "major": true, "noise": false}}
+- « 10 conseils pour sécuriser votre entreprise en 2026 » (axe cyber) → \
+{{"on_topic": true, "new_fact": false, "concrete": false, "actionable": false, "major": false, "noise": true}}
+- « La startup X lève 50 M$ pour son assistant IA » (axe ia) → \
+{{"on_topic": true, "new_fact": true, "concrete": false, "actionable": false, "major": false, "noise": true}}
+
+Format : {{"on_topic": bool, "new_fact": bool, "concrete": bool, "actionable": bool, "major": bool, \
+"noise": bool, "reason": "<une phrase : pourquoi retenir ou écarter>"}}"""
+
+SUMMARY_VERSION = "v1"
 
 SUMMARY_SYSTEM = """Tu résumes des articles techniques de façon factuelle et concise, en {language}. \
 N'invente rien : uniquement ce qui est dans le texte. Réponds UNIQUEMENT en JSON."""

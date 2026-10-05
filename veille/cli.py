@@ -19,12 +19,19 @@ def cmd_report(cfg, conn, args):
     data = process.run(cfg, conn, args.axis)
     md, html, js = report.render(data, cfg.reports_dir)
     db.save_report(conn, data["generated_at"], str(md), str(html), data)
-    print(f"Rapport : {html}\n          {md}\n          {js}")
+    reports = [dict(r) for r in conn.execute("SELECT * FROM reports ORDER BY created_at DESC")]
+    index = report.render_index(reports, cfg.reports_dir)
+    print(f"Rapport : {html}\n          {md}\n          {js}\nIndex   : {index}")
 
 
 def cmd_run(cfg, conn, args):
     cmd_collect(cfg, conn, args)
     cmd_report(cfg, conn, args)
+
+
+def cmd_prune(cfg, conn, args):
+    before = (datetime.now(timezone.utc) - timedelta(days=args.older_than)).isoformat()
+    print(f"{db.prune(conn, before)} articles supprimés (publiés avant {before[:10]})")
 
 
 def cmd_links(cfg, conn, args):
@@ -134,6 +141,10 @@ def main(argv=None):
     lp.set_defaults(fn=cmd_links)
     sub.choices["collect"].set_defaults(fn=cmd_collect)
 
+    pp = sub.add_parser("prune", help="supprimer les vieux articles de la base (les rapports restent)")
+    pp.add_argument("--older-than", type=int, default=90, metavar="JOURS")
+    pp.set_defaults(fn=cmd_prune)
+
     cp = sub.add_parser("check-feeds", help="tester réellement chaque source (config ou catalogue)")
     cp.add_argument("--catalog", help="fichier catalogue (ex. sources/catalog.yaml) au lieu de config.yaml")
     cp.add_argument("--group", action="append", help="limiter à un axe/groupe (répétable)")
@@ -152,6 +163,7 @@ def main(argv=None):
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("trafilatura").setLevel(logging.ERROR)  # « discarding data: None » etc.
     if getattr(args, "standalone", False):  # pas besoin de base ni de LLM
         return args.fn(args)
     cfg = load_config(args.config)

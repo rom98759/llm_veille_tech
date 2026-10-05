@@ -6,8 +6,9 @@ import json
 import logging
 import re
 import sqlite3
+import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import feedparser
@@ -103,9 +104,23 @@ def http_client() -> httpx.Client:
     return httpx.Client(timeout=20, follow_redirects=True, headers={"User-Agent": USER_AGENT})
 
 
+def get_with_retry(client: httpx.Client, url: str) -> httpx.Response:
+    """Un seul nouvel essai sur 429/503, en respectant Retry-After (plafonné à 30 s)."""
+    resp = client.get(url)
+    if resp.status_code in (429, 503):
+        try:
+            wait = min(30.0, float(resp.headers.get("retry-after", 10)))
+        except ValueError:
+            wait = 10.0
+        log.info("%s : HTTP %d, nouvel essai dans %.0f s", url, resp.status_code, wait)
+        time.sleep(wait)
+        resp = client.get(url)
+    return resp
+
+
 def fetch_feed(client: httpx.Client, feed: Feed) -> list[dict]:
     try:
-        resp = client.get(feed.url)
+        resp = get_with_retry(client, feed.url)
         resp.raise_for_status()
         items = PARSERS[feed.kind](feed, resp.content)
     except (httpx.HTTPError, ValueError) as e:
@@ -124,9 +139,13 @@ def collect(cfg: Config, conn: sqlite3.Connection) -> int:
         with ThreadPoolExecutor(max_workers=8) as pool:
             results = list(pool.map(lambda j: fetch_feed(client, j[0]), jobs))
 
-    links = 0
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=cfg.pipeline.max_age_days)).isoformat()
+    links = skipped = 0
     for (feed, axis), items in zip(jobs, results):
         for item in items:
+            if item["published"] < cutoff:  # historique des flux (CISA KEV, archives complètes…)
+                skipped += 1
+                continue
             article_id = db.upsert_article(conn, item)
             if axis is not None:
                 targets = [axis.key]
@@ -137,4 +156,5 @@ def collect(cfg: Config, conn: sqlite3.Connection) -> int:
                 db.link_axis(conn, article_id, key)
                 links += 1
     conn.commit()
+    log.info("%d articles ignorés car plus vieux que %d j", skipped, cfg.pipeline.max_age_days)
     return links

@@ -32,11 +32,14 @@ class LLMConfig:
     temperature: float = 0.2
     timeout: float = 300
     max_input_chars: int = 6000
+    max_workers: int = 2               # appels LLM simultanés (côté Ollama : OLLAMA_NUM_PARALLEL)
+    extra_body: dict = field(default_factory=dict)  # paramètres ajoutés tels quels à chaque requête
 
 
 @dataclass
 class PipelineConfig:
     lookback_days: int = 2
+    max_age_days: int = 14             # collecte : ignorer les articles plus vieux (ex. historique CISA KEV)
     candidates_per_axis: int = 25
     keep_per_axis: int = 8
     min_llm_score: int = 6

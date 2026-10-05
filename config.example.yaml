@@ -5,20 +5,24 @@ llm:
   # N'importe quel serveur compatible OpenAI : Ollama, llama.cpp server, LM Studio, vLLM...
   base_url: http://localhost:11434/v1
   api_key: ollama            # ignoré par Ollama
-  model: qwen2.5:7b-instruct # ou llama3.1:8b, mistral-nemo, gemma2:9b...
+  model: qwen3:8b            # cf. README « Choix du modèle » ; un 4B tourne mais synthétise mal
   temperature: 0.2
   timeout: 300
   max_input_chars: 6000      # texte d'article envoyé au modèle (tronqué)
+  max_workers: 2             # appels LLM en parallèle ; côté Ollama : OLLAMA_NUM_PARALLEL >= cette valeur
+  extra_body: {}             # ajouté tel quel à chaque requête, ex. pour couper la réflexion des modèles qwen3 :
+  # extra_body: {reasoning_effort: none}   # à tester selon ta version d'Ollama
 
 storage:
   db_path: data/veille.db
   reports_dir: reports
 
 pipeline:
-  lookback_days: 2           # fenêtre de collecte pour un rapport
+  lookback_days: 2           # fenêtre couverte par un rapport
+  max_age_days: 14           # collecte : ignorer les articles plus vieux (historique CISA KEV, archives…)
   candidates_per_axis: 25    # pré-tri heuristique -> jugés par le LLM
   keep_per_axis: 8           # articles retenus et résumés par axe
-  min_llm_score: 6           # seuil de pertinence (0-10)
+  min_llm_score: 6           # seuil (0-10), note calculée par grille : fait nouveau, concret, actionnable…
   fetch_full_text: true      # extraire le contenu de la page (trafilatura)
   language: français         # langue du rapport
 

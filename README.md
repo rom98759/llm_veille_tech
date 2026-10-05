@@ -2,6 +2,8 @@
 
 Veille technologique 100 % locale : flux RSS → pré-tri → jugement et résumé par un LLM local → rapport Markdown/HTML/JSON sur un template commun, avec **tous les liens conservés** (SQLite).
 
+> Comparaison en cours avec Miniflux / miniflux-ai / betternews : voir [`bench/PROTOCOLE.md`](bench/PROTOCOLE.md).
+
 ## Pipeline
 
 ```
@@ -11,13 +13,15 @@ Veille technologique 100 % locale : flux RSS → pré-tri → jugement et résum
  flux partagés       score heuristique                 synthèse par axe avec [n]        + latest.html
  routés par          (mots-clés × poids source         résumé exécutif tous axes
  mots-clés           × fraîcheur × couverture)
-                     top N ─► LLM note 0-10
-                     selon ton profil
+                     top N ─► LLM : grille
+                     oui/non → note 0-10
             └──────────────── tout est stocké dans SQLite (data/veille.db) ────────────────┘
 ```
 
-- **Sources utiles** : un flux a un `weight` ; un sujet repris par plusieurs sources est boosté ; le LLM note chaque candidat par rapport au `profile` défini dans la config (ce qui t'intéresse / ce qui est du bruit). Seuls les articles ≥ `min_llm_score` sont résumés.
-- **Économie de LLM** : le pré-tri heuristique limite à `candidates_per_axis` appels de notation par axe ; notes et résumés sont mis en cache en base, une relance ne refait que le nouveau.
+- **Sources utiles** : un flux a un `weight` ; un sujet repris par plusieurs sources est boosté ; le LLM juge chaque candidat par rapport au `profile` défini dans la config. Seuls les articles ≥ `min_llm_score` sont résumés.
+- **Notation par grille** : une note libre 0-10 sature avec les petits modèles (test réel : 18/18 entre 8 et 10). Le LLM répond donc à des questions fermées — dans l'axe ? fait nouveau ? concret ? actionnable ? impact large ? bruit/marketing ? — et la note est calculée en Python (`process.JUDGE_WEIGHTS`). Les critères validés s'affichent sur chaque fiche.
+- **Économie de LLM** : le pré-tri heuristique limite à `candidates_per_axis` appels de notation par axe ; notes et résumés sont mis en cache en base, **par modèle et version de prompt** (changer `llm.model` régénère tout) ; appels en parallèle (`llm.max_workers`).
+- **Provenance** : si la page ne peut pas être lue, le résumé est fait sur l'extrait du flux — c'est signalé dans le log et sur la fiche (« résumé sur extrait RSS »).
 - **Traçabilité** : chaque affirmation de synthèse cite `[n]` → ancre vers la fiche article → lien source. Les candidats écartés sont listés avec leur note et la raison (« Autres liens évalués »). L'historique complet reste interrogeable.
 
 ## Installation
@@ -28,11 +32,23 @@ pip install -e .
 cp config.example.yaml config.yaml     # définir axes, flux, profil, modèle
 
 # LLM local (exemple Ollama)
-ollama pull qwen2.5:7b-instruct
+ollama pull qwen3:8b
 ```
 
+Installation reproductible (versions testées) : `pip install -r requirements.lock && pip install --no-deps -e .`
+
 Tout serveur compatible OpenAI fonctionne (`llm.base_url`) : Ollama, llama.cpp `llama-server`, LM Studio, vLLM.
-Modèles conseillés (bon suivi d'instructions + JSON, multilingue) : `qwen2.5:7b-instruct`, `llama3.1:8b`, `mistral-nemo`, `gemma2:9b`. Sur CPU seul, un 3-4B (`qwen2.5:3b`, `phi3.5`) passe mais les synthèses sont plus pauvres.
+
+### Choix du modèle
+
+| Taille | Constat | Usage |
+|---|---|---|
+| 3-4B (ex. `qwen3-4b`) | **Testé** : pipeline complet OK, ~13 s/appel, mais synthèses creuses (« Des mises à jour de sécurité sont publiées le vendredi pour Linux. ») | notation seule, ou machine sans GPU |
+| 7-9B (`qwen3:8b`, `qwen2.5:7b-instruct`, `llama3.1:8b`, `gemma2:9b`) | non testé ici ; bon compromis attendu | défaut conseillé |
+| 14-32B (ex. `qwen3.8-27b`) | non testé ici ; meilleures synthèses attendues, plus lent | si la VRAM le permet |
+
+- Modèles « raisonnants » (qwen3…) : le bloc `<think>` renvoyé est retiré automatiquement ; pour le couper à la source et gagner du temps, `llm.extra_body` (ex. `{reasoning_effort: none}`, à vérifier selon ta version d'Ollama).
+- Parallélisme : `llm.max_workers: 2` n'accélère que si le serveur traite plusieurs requêtes (`OLLAMA_NUM_PARALLEL=2` ou plus).
 
 ## Utilisation
 
@@ -45,7 +61,14 @@ veille run --axis cyber        # un seul axe
 # Creuser : recherche dans tout l'historique collecté
 veille links kubernetes --days 30
 veille links --axis cyber --min-score 7
+
+veille prune --older-than 90   # purge des vieux articles (les rapports gardent leur JSON)
+veille export-opml --out feeds.opml   # flux au format OPML (Miniflux, FreshRSS…)
 ```
+
+Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique de tous les rapports), `latest.html` (redirige vers le dernier) et `latest.json`.
+
+Le rapport HTML : cartes par article (note, source, date relative, nb de sources couvrant le sujet, critères validés, tags), couleur par axe, sommaire fixe, recherche + filtres (note minimale, source, axe, clic sur un tag), citations `[n]` en pastilles avec aperçu au survol et retour depuis la fiche, thème clair/sombre, impression propre (tout déplié, URL des liens affichées).
 
 ### Vérifier les sources (à faire en premier)
 
@@ -86,9 +109,9 @@ cron :
 Docker :
 ```bash
 docker compose up -d ollama web
-docker compose exec ollama ollama pull qwen2.5:7b-instruct
+docker compose exec ollama ollama pull qwen3:8b
 docker compose run --rm veille run      # avec base_url: http://ollama:11434/v1
-# rapport : http://<lab>:8080/latest.html
+# rapports : http://<lab>:8080/  (index.html = historique)
 ```
 
 ## Ajouter un axe
@@ -109,8 +132,8 @@ Sources sans RSS : beaucoup de sites en ont un caché (`/feed`, `/rss`, `/atom.x
 
 ## Personnaliser
 
-- Rapport : `veille/templates/report.md.j2` (le HTML est dérivé du Markdown, style dans `report.html.j2`).
-- Prompts : `veille/prompts.py` (courts et cadrés pour modèles 7-9B).
+- Rapport : `veille/templates/report.html.j2` (HTML rendu directement depuis les données), `_theme.css` (couleurs, typo), `report.md.j2` (export texte), `index.html.j2` (historique).
+- Prompts : `veille/prompts.py` ; poids de la grille : `JUDGE_WEIGHTS` dans `veille/process.py`. Modifier un prompt → incrémenter `JUDGE_VERSION` / `SUMMARY_VERSION` pour invalider le cache.
 - Données brutes pour analyse : `sqlite3 data/veille.db` — tables `articles` (texte complet, résumé JSON), `article_axes` (notes par axe), `reports` (JSON de chaque rapport).
 
 ## Tests

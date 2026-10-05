@@ -29,9 +29,12 @@ class LLM:
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
+        body.update(self.cfg.extra_body)
         resp = self.client.post("/chat/completions", json=body)
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
+        content = resp.json()["choices"][0]["message"]["content"] or ""
+        # modèles « raisonnants » (qwen3, deepseek-r1…) : retirer le bloc de réflexion s'il est renvoyé
+        return re.sub(r"<think>.*?</think>", "", content, flags=re.S).strip()
 
     def chat_json(self, system: str, user: str, retries: int = 2) -> dict:
         """Les petits modèles cassent parfois le JSON : on extrait le premier objet et on réessaie."""

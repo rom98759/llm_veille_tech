@@ -84,7 +84,7 @@ cyber_fr:
   - {name: CERT-FR Avis, url: "https://www.cert.ssi.gouv.fr/avis/feed/", note: à tester}
   - {name: CERT-FR Menaces & incidents (CTI), url: "https://www.cert.ssi.gouv.fr/cti/feed/", note: à tester}
   - {name: CERT-FR Actualités, url: "https://www.cert.ssi.gouv.fr/actualite/feed/", note: à tester}
-  - {name: Cert Santé (cyberveille), url: "https://cyberveille.esante.gouv.fr/rss.xml", note: "à tester ; sinon : veille discover cyberveille.esante.gouv.fr"}
+  # Cert Santé (cyberveille.esante.gouv.fr) retiré : /rss.xml en 404 et aucun flux détecté par `veille discover` (test 2026-10).
   - {name: Zataz, url: "https://www.zataz.com/feed/", note: à tester}
   - {name: LeMagIT sécurité, url: "https://www.lemagit.fr/rss/ContentSyndication.xml", note: "à tester ; sinon : veille discover lemagit.fr"}
 

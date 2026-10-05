@@ -57,8 +57,10 @@ def test_end_to_end_with_fake_llm(tmp_path, monkeypatch):
     conn.commit()
 
     def fake_chat(self, system, user, json_mode=False):
-        if "Note de 0 à 10" in user:
-            return json.dumps({"score": 8 if "campaign 0" in user or "campaign 1" in user else 3, "reason": "ok"})
+        if "- on_topic :" in user:
+            good = "campaign 0" in user or "campaign 1" in user
+            return json.dumps({"on_topic": True, "new_fact": good, "concrete": True, "actionable": good,
+                               "major": False, "noise": not good, "reason": "ok"})
         if json_mode:
             return json.dumps({"tldr": "Résumé.", "key_points": ["a", "b"], "why_it_matters": "Patcher.", "tags": ["cve"]})
         if "résumé exécutif" in user:

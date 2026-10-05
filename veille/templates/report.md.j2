@@ -29,7 +29,7 @@ _Rien de notable sur la période._
 <a id="{{ a.key }}-{{ loop.index }}"></a>
 ### {{ loop.index }}. [{{ it.title }}]({{ it.url }})
 
-`{{ it.source }}` · {{ it.published[:10] }} · pertinence **{{ "%.0f" | format(it.llm_score) }}/10**{% if it.coverage and it.coverage > 1 %} · couvert par {{ it.coverage }} sources{% endif %}{% if it.digest.tags %} · {{ it.digest.tags | map("tag") | join(" ") }}{% endif %}
+`{{ it.source }}` · {{ it.published[:10] }} · pertinence **{{ it.llm_score | fmt_score }}/10**{% if it.coverage and it.coverage > 1 %} · couvert par {{ it.coverage }} sources{% endif %}{% if it.digest.tags %} · {{ it.digest.tags | map("tag") | join(" ") }}{% endif %}{% if it.digest.text_source == "rss" %} · ⚠ résumé sur extrait RSS{% endif %}
 
 **TL;DR** — {{ it.digest.tldr }}
 {% for p in it.digest.key_points %}
@@ -44,12 +44,12 @@ Voir aussi : {% for r in it.related %}[{{ r.source }}]({{ r.url }}){% if not loo
 
 {% endfor -%}
 {% if a.others -%}
-<details markdown="1"><summary>Autres liens évalués ({{ a.others | length }})</summary>
+<details><summary>Autres liens évalués ({{ a.others | length }})</summary>
 
 | Score | Titre | Source | Raison |
 |---:|---|---|---|
 {% for it in a.others -%}
-| {{ "%.0f" | format(it.llm_score) }} | [{{ it.title | md_cell }}]({{ it.url }}) | {{ it.source }} | {{ it.llm_reason | md_cell }} |
+| {{ it.llm_score | fmt_score }} | [{{ it.title | md_cell }}]({{ it.url }}) | {{ it.source }} | {{ it.llm_reason | md_cell }} |
 {% endfor %}
 </details>
 

@@ -2,6 +2,7 @@
 
 Utilise exactement le même parseur que la collecte : si un flux passe ici, il passera en prod.
 """
+
 from __future__ import annotations
 
 import re
@@ -15,14 +16,37 @@ import httpx
 from .collect import PARSERS, http_client
 from .config import Feed
 
-COMMON_PATHS = ["/feed", "/feed/", "/rss", "/rss.xml", "/atom.xml", "/feed.xml", "/index.xml", "/blog/rss.xml",
-                "/blog/feed", "/blog/feed.xml", "/feeds/posts/default", "/rss/"]
+COMMON_PATHS = [
+    "/feed",
+    "/feed/",
+    "/rss",
+    "/rss.xml",
+    "/atom.xml",
+    "/feed.xml",
+    "/index.xml",
+    "/blog/rss.xml",
+    "/blog/feed",
+    "/blog/feed.xml",
+    "/feeds/posts/default",
+    "/rss/",
+]
 FEED_TYPES = ("rss", "atom", "xml")
 
 
 def check_feed(client: httpx.Client, feed: Feed, stale_days: int = 30) -> dict:
-    res = {"name": feed.name, "url": feed.url, "kind": feed.kind, "status": None, "verdict": "ERREUR",
-           "items": 0, "latest": None, "age_days": None, "ms": None, "detail": "", "final_url": None}
+    res = {
+        "name": feed.name,
+        "url": feed.url,
+        "kind": feed.kind,
+        "status": None,
+        "verdict": "ERREUR",
+        "items": 0,
+        "latest": None,
+        "age_days": None,
+        "ms": None,
+        "detail": "",
+        "final_url": None,
+    }
     t0 = time.monotonic()
     try:
         resp = client.get(feed.url)
@@ -36,7 +60,8 @@ def check_feed(client: httpx.Client, feed: Feed, stale_days: int = 30) -> dict:
     ctype = resp.headers.get("content-type", "")
     if resp.status_code >= 400:
         res["detail"] = {403: "refusé (anti-bot / géo / UA)", 404: "n'existe pas", 429: "rate-limit"}.get(
-            resp.status_code, resp.reason_phrase)
+            resp.status_code, resp.reason_phrase
+        )
         return res
 
     try:

@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import logging
 from datetime import datetime, timedelta, timezone
-
 from pathlib import Path
 
 from . import check, collect, db, process, report
@@ -54,7 +53,9 @@ def cmd_links(cfg, conn, args):
     params.append(args.limit)
     for r in conn.execute(sql, params):
         score = "  -" if r["llm_score"] is None else f"{r['llm_score']:3.0f}"
-        print(f"{r['published'][:10]} {score} {r['axis']:<8} {r['source'][:18]:<18} {r['title'][:80]}\n{'':>12}{r['url']}")
+        print(
+            f"{r['published'][:10]} {score} {r['axis']:<8} {r['source'][:18]:<18} {r['title'][:80]}\n{'':>12}{r['url']}"
+        )
 
 
 ICONS = {"OK": "✅", "INACTIF": "💤", "VIDE": "⚠️ ", "PAGE HTML": "🔎", "ERREUR": "❌"}
@@ -78,10 +79,14 @@ def cmd_check(args):
         for r in check.check_feeds(feeds, args.stale_days):
             counts[r["verdict"]] = counts.get(r["verdict"], 0) + 1
             redirect = f"  → {r['final_url']}" if r["final_url"] else ""
-            print(f"{ICONS[r['verdict']]} {r['verdict']:<9} {r['name'][:30]:<30} {str(r['status'] or '-'):>3} "
-                  f"{r['items']:>4} art. {r['latest'] or '':<10} {r['detail']}{redirect}")
-            lines.append(f"| {ICONS[r['verdict']]} | {group} | {r['name']} | {r['status'] or '-'} | {r['items']} | "
-                         f"{r['latest'] or ''} | {r['detail'].replace('|', '/')} | {r['final_url'] or r['url']} |")
+            print(
+                f"{ICONS[r['verdict']]} {r['verdict']:<9} {r['name'][:30]:<30} {r['status'] or '-'!s:>3} "
+                f"{r['items']:>4} art. {r['latest'] or '':<10} {r['detail']}{redirect}"
+            )
+            lines.append(
+                f"| {ICONS[r['verdict']]} | {group} | {r['name']} | {r['status'] or '-'} | {r['items']} | "
+                f"{r['latest'] or ''} | {r['detail'].replace('|', '/')} | {r['final_url'] or r['url']} |"
+            )
     print("\nBilan :", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -92,10 +97,16 @@ def cmd_check(args):
 def cmd_opml(args):
     """Export des flux de config.yaml en OPML (une catégorie par axe) pour Miniflux, FreshRSS, betternews..."""
     from xml.sax.saxutils import quoteattr
+
     cfg = load_config(args.config)
     groups = {a.title: a.feeds for a in cfg.axes.values()}
     groups["Partagés"] = cfg.shared_feeds
-    out = ['<?xml version="1.0" encoding="UTF-8"?>', '<opml version="2.0">', "<head><title>veille</title></head>", "<body>"]
+    out = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<opml version="2.0">',
+        "<head><title>veille</title></head>",
+        "<body>",
+    ]
     skipped = []
     for title, feeds in groups.items():
         out.append(f"  <outline text={quoteattr(title)} title={quoteattr(title)}>")
@@ -103,7 +114,10 @@ def cmd_opml(args):
             if f.kind != "rss":
                 skipped.append(f.name)
                 continue
-            out.append(f'    <outline type="rss" text={quoteattr(f.name)} title={quoteattr(f.name)} xmlUrl={quoteattr(f.url)}/>')
+            out.append(
+                f'    <outline type="rss" text={quoteattr(f.name)} title={quoteattr(f.name)}'
+                f" xmlUrl={quoteattr(f.url)}/>"
+            )
         out.append("  </outline>")
     out += ["</body>", "</opml>"]
     Path(args.out).write_text("\n".join(out) + "\n", encoding="utf-8")
@@ -128,7 +142,9 @@ def main(argv=None):
 
     sub.add_parser("collect", help="récupérer les flux")
     for name, fn in (("report", cmd_report), ("run", cmd_run)):
-        sp = sub.add_parser(name, help="trier + résumer + générer le rapport" + (" (après collecte)" if name == "run" else ""))
+        sp = sub.add_parser(
+            name, help="trier + résumer + générer le rapport" + (" (après collecte)" if name == "run" else "")
+        )
         sp.add_argument("--axis", action="append", help="limiter à un axe (répétable)")
         sp.set_defaults(fn=fn)
 

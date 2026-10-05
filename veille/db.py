@@ -1,4 +1,5 @@
 """Stockage SQLite : tout ce qui est collecté est conservé (liens, scores, résumés)."""
+
 from __future__ import annotations
 
 import json
@@ -70,9 +71,7 @@ def upsert_article(conn: sqlite3.Connection, a: dict) -> int:
 
 
 def link_axis(conn: sqlite3.Connection, article_id: int, axis: str) -> None:
-    conn.execute(
-        "INSERT OR IGNORE INTO article_axes (article_id, axis) VALUES (?, ?)", (article_id, axis)
-    )
+    conn.execute("INSERT OR IGNORE INTO article_axes (article_id, axis) VALUES (?, ?)", (article_id, axis))
 
 
 def articles_for_axis(conn: sqlite3.Connection, axis: str, since_iso: str) -> list[sqlite3.Row]:

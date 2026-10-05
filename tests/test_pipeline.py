@@ -2,8 +2,6 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
-
 from veille import db, process, report
 from veille.collect import normalize_url
 from veille.config import load_config
@@ -28,9 +26,14 @@ def test_parse_json_tolerant():
 
 
 def _item(title, source, hours=1, weight=1.0):
-    return {"title": title, "summary": "", "source": source, "source_weight": weight,
-            "url": f"https://{source}/{title}",
-            "published": (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()}
+    return {
+        "title": title,
+        "summary": "",
+        "source": source,
+        "source_weight": weight,
+        "url": f"https://{source}/{title}",
+        "published": (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(),
+    }
 
 
 def test_preselect_clusters_same_story():
@@ -59,10 +62,21 @@ def test_end_to_end_with_fake_llm(tmp_path, monkeypatch):
     def fake_chat(self, system, user, json_mode=False):
         if "- on_topic :" in user:
             good = "campaign 0" in user or "campaign 1" in user
-            return json.dumps({"on_topic": True, "new_fact": good, "concrete": True, "actionable": good,
-                               "major": False, "noise": not good, "reason": "ok"})
+            return json.dumps(
+                {
+                    "on_topic": True,
+                    "new_fact": good,
+                    "concrete": True,
+                    "actionable": good,
+                    "major": False,
+                    "noise": not good,
+                    "reason": "ok",
+                }
+            )
         if json_mode:
-            return json.dumps({"tldr": "Résumé.", "key_points": ["a", "b"], "why_it_matters": "Patcher.", "tags": ["cve"]})
+            return json.dumps(
+                {"tldr": "Résumé.", "key_points": ["a", "b"], "why_it_matters": "Patcher.", "tags": ["cve"]}
+            )
         if "résumé exécutif" in user:
             return "- Point clé [cyber:1]"
         return "Deux campagnes actives [1][2]."
@@ -72,7 +86,7 @@ def test_end_to_end_with_fake_llm(tmp_path, monkeypatch):
     cyber = data["axes"][0]
     assert len(cyber["items"]) == 2 and len(cyber["others"]) == 2
 
-    md, html, js = report.render(data, cfg.reports_dir)
+    md, html, _ = report.render(data, cfg.reports_dir)
     text = md.read_text()
     assert "[[1]](#cyber-1)" in text and "[[cyber:1]](#cyber-1)" in text
     assert 'id="cyber-2"' in html.read_text()
@@ -80,6 +94,8 @@ def test_end_to_end_with_fake_llm(tmp_path, monkeypatch):
 
     # le cache évite de rappeler le LLM pour le jugement/résumé
     calls = []
-    monkeypatch.setattr(LLM, "chat", lambda self, s, u, json_mode=False: calls.append(json_mode) or fake_chat(self, s, u, json_mode))
+    monkeypatch.setattr(
+        LLM, "chat", lambda self, s, u, json_mode=False: calls.append(json_mode) or fake_chat(self, s, u, json_mode)
+    )
     process.run(cfg, conn, ["cyber"])
     assert not any(calls)

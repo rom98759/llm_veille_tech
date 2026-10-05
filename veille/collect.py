@@ -1,4 +1,5 @@
 """Étape 1 : collecte des flux RSS/Atom, normalisation, routage vers les axes."""
+
 from __future__ import annotations
 
 import html
@@ -62,15 +63,17 @@ def parse_rss(feed: Feed, content: bytes) -> list[dict]:
         title = clean_text(e.get("title"), 300)
         if not link or not title:
             continue
-        items.append({
-            "url": normalize_url(link),
-            "title": title,
-            "summary": clean_text(e.get("summary") or e.get("description")),
-            "source": feed.name,
-            "source_weight": feed.weight,
-            "published": _entry_date(e).isoformat(),
-            "fetched_at": now,
-        })
+        items.append(
+            {
+                "url": normalize_url(link),
+                "title": title,
+                "summary": clean_text(e.get("summary") or e.get("description")),
+                "source": feed.name,
+                "source_weight": feed.weight,
+                "published": _entry_date(e).isoformat(),
+                "fetched_at": now,
+            }
+        )
     return items
 
 
@@ -85,15 +88,19 @@ def parse_cisa_kev(feed: Feed, content: bytes) -> list[dict]:
             continue
         added = datetime.fromisoformat(v.get("dateAdded", now[:10])).replace(tzinfo=timezone.utc)
         ransomware = " — utilisée par des ransomwares" if v.get("knownRansomwareCampaignUse") == "Known" else ""
-        items.append({
-            "url": f"https://nvd.nist.gov/vuln/detail/{cve}",
-            "title": f"{cve} exploitée : {v.get('vendorProject', '')} {v.get('product', '')} — {v.get('vulnerabilityName', '')}",
-            "summary": f"{v.get('shortDescription', '')} Action requise : {v.get('requiredAction', '')}{ransomware}",
-            "source": feed.name,
-            "source_weight": feed.weight,
-            "published": added.isoformat(),
-            "fetched_at": now,
-        })
+        product = f"{v.get('vendorProject', '')} {v.get('product', '')}".strip()
+        action = v.get("requiredAction", "")
+        items.append(
+            {
+                "url": f"https://nvd.nist.gov/vuln/detail/{cve}",
+                "title": f"{cve} exploitée : {product} — {v.get('vulnerabilityName', '')}",
+                "summary": f"{v.get('shortDescription', '')} Action requise : {action}{ransomware}",
+                "source": feed.name,
+                "source_weight": feed.weight,
+                "published": added.isoformat(),
+                "fetched_at": now,
+            }
+        )
     return items
 
 
@@ -135,13 +142,12 @@ def collect(cfg: Config, conn: sqlite3.Connection) -> int:
     jobs: list[tuple[Feed, Axis | None]] = [(f, a) for a in cfg.axes.values() for f in a.feeds]
     jobs += [(f, None) for f in cfg.shared_feeds]
 
-    with http_client() as client:
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            results = list(pool.map(lambda j: fetch_feed(client, j[0]), jobs))
+    with http_client() as client, ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda j: fetch_feed(client, j[0]), jobs))
 
     cutoff = (datetime.now(timezone.utc) - timedelta(days=cfg.pipeline.max_age_days)).isoformat()
     links = skipped = 0
-    for (feed, axis), items in zip(jobs, results):
+    for (_feed, axis), items in zip(jobs, results, strict=True):
         for item in items:
             if item["published"] < cutoff:  # historique des flux (CISA KEV, archives complètes…)
                 skipped += 1

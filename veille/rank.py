@@ -1,14 +1,14 @@
 """Étape 2a : regroupement des doublons et pré-tri heuristique (sans LLM, rapide)."""
+
 from __future__ import annotations
 
 import math
 import re
 from datetime import datetime, timezone
 
-STOPWORDS = set(
-    "the a an of to in on for and or with is are was by from at as its it this that new how why "
-    "le la les des du de un une et ou en pour sur par avec est dans au aux".split()
-)
+_STOPWORDS_EN = "the a an of to in on for and or with is are was by from at as its it this that new how why"
+_STOPWORDS_FR = "le la les des du de un une et ou en pour sur par avec est dans au aux"
+STOPWORDS = frozenset(f"{_STOPWORDS_EN} {_STOPWORDS_FR}".split())
 
 
 def matches_keywords(text: str, keywords: list[str]) -> list[str]:

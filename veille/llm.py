@@ -1,4 +1,5 @@
 """Client minimal pour un serveur compatible OpenAI (Ollama, llama.cpp, LM Studio, vLLM)."""
+
 from __future__ import annotations
 
 import json

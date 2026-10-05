@@ -1,4 +1,5 @@
 """Rendu HTML/Markdown, parsing RSS, notation par grille, dégradations LLM, cache par modèle."""
+
 import json
 import re
 from datetime import datetime, timedelta, timezone
@@ -16,26 +17,59 @@ NOW = datetime.now(timezone.utc)
 
 
 def _item(n, score, **kw):
-    it = {"id": n, "title": f"Titre {n}", "url": f"https://ex.com/{n}", "source": "Src", "published": NOW.isoformat(),
-          "llm_score": score, "llm_reason": "raison", "criteria": {"new_fact": True, "major": True},
-          "score_h": 1.0, "coverage": 1, "related": [],
-          "digest": {"tldr": "Résumé **gras**", "key_points": ["a"], "why_it_matters": "b", "tags": ["cve"],
-                     "text_source": "page"}}
+    it = {
+        "id": n,
+        "title": f"Titre {n}",
+        "url": f"https://ex.com/{n}",
+        "source": "Src",
+        "published": NOW.isoformat(),
+        "llm_score": score,
+        "llm_reason": "raison",
+        "criteria": {"new_fact": True, "major": True},
+        "score_h": 1.0,
+        "coverage": 1,
+        "related": [],
+        "digest": {
+            "tldr": "Résumé **gras**",
+            "key_points": ["a"],
+            "why_it_matters": "b",
+            "tags": ["cve"],
+            "text_source": "page",
+        },
+    }
     it.update(kw)
     return it
 
 
 def sample():
-    evil = _item(3, 8.5, title='<script>alert(1)</script> & "x"',
-                 digest={"tldr": "<img src=x onerror=alert(1)>", "key_points": [], "why_it_matters": "",
-                         "tags": [], "text_source": "rss"})
+    evil = _item(
+        3,
+        8.5,
+        title='<script>alert(1)</script> & "x"',
+        digest={
+            "tldr": "<img src=x onerror=alert(1)>",
+            "key_points": [],
+            "why_it_matters": "",
+            "tags": [],
+            "text_source": "rss",
+        },
+    )
     return {
-        "generated_at": NOW.isoformat(timespec="minutes"), "since": NOW.isoformat()[:16], "model": "m",
+        "generated_at": NOW.isoformat(timespec="minutes"),
+        "since": NOW.isoformat()[:16],
+        "model": "m",
         "executive_summary": "- Point [cyber:1]\n- Autre [cyber:9]",
-        "axes": [{"key": "cyber", "title": "Cybersécurité", "description": "d",
-                  "synthesis": "Faits [1][3] puis [1] et [7].",
-                  "items": [_item(1, 9.5), _item(2, 7.5, coverage=3), evil],
-                  "others": [_item(4, 2.0, llm_reason="hors sujet")], "total_collected": 10}],
+        "axes": [
+            {
+                "key": "cyber",
+                "title": "Cybersécurité",
+                "description": "d",
+                "synthesis": "Faits [1][3] puis [1] et [7].",
+                "items": [_item(1, 9.5), _item(2, 7.5, coverage=3), evil],
+                "others": [_item(4, 2.0, llm_reason="hors sujet")],
+                "total_collected": 10,
+            }
+        ],
     }
 
 
@@ -56,7 +90,7 @@ class Collector(HTMLParser):
 
 def test_html_structure_anchors_and_escaping(tmp_path):
     data = sample()
-    md, html_path, js = report.render(data, tmp_path)
+    _, html_path, js = report.render(data, tmp_path)
     html = html_path.read_text()
     p = Collector()
     p.feed(html)
@@ -122,8 +156,15 @@ def setup(tmp_path):
     cfg.pipeline.fetch_full_text = False
     conn = db.connect(cfg.db_path)
     for i in range(3):
-        it = {"url": f"https://ex.com/{i}", "title": f"Ransomware exploits CVE-2026-{i}", "summary": "s",
-              "source": "S", "source_weight": 1.0, "published": NOW.isoformat(), "fetched_at": NOW.isoformat()}
+        it = {
+            "url": f"https://ex.com/{i}",
+            "title": f"Ransomware exploits CVE-2026-{i}",
+            "summary": "s",
+            "source": "S",
+            "source_weight": 1.0,
+            "published": NOW.isoformat(),
+            "fetched_at": NOW.isoformat(),
+        }
         db.link_axis(conn, db.upsert_article(conn, it), "cyber")
     conn.commit()
     return cfg, conn
@@ -162,11 +203,30 @@ def test_collect_skips_old_items(setup, monkeypatch):
     cfg, conn = setup
     old = (NOW - timedelta(days=400)).isoformat()
     fresh = NOW.isoformat()
-    monkeypatch.setattr(collect, "fetch_feed", lambda client, feed: [
-        {"url": f"https://k/{feed.name}/old", "title": "vieux", "summary": "", "source": feed.name,
-         "source_weight": 1, "published": old, "fetched_at": fresh},
-        {"url": f"https://k/{feed.name}/new", "title": "neuf", "summary": "", "source": feed.name,
-         "source_weight": 1, "published": fresh, "fetched_at": fresh}])
+    monkeypatch.setattr(
+        collect,
+        "fetch_feed",
+        lambda client, feed: [
+            {
+                "url": f"https://k/{feed.name}/old",
+                "title": "vieux",
+                "summary": "",
+                "source": feed.name,
+                "source_weight": 1,
+                "published": old,
+                "fetched_at": fresh,
+            },
+            {
+                "url": f"https://k/{feed.name}/new",
+                "title": "neuf",
+                "summary": "",
+                "source": feed.name,
+                "source_weight": 1,
+                "published": fresh,
+                "fetched_at": fresh,
+            },
+        ],
+    )
     collect.collect(cfg, conn)
     titles = {r["title"] for r in conn.execute("SELECT title FROM articles")}
     assert "neuf" in titles and "vieux" not in titles

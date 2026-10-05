@@ -2,6 +2,7 @@
 
 Tout résultat LLM est mis en cache en base : relancer le pipeline ne refait que ce qui manque.
 """
+
 from __future__ import annotations
 
 import json
@@ -25,8 +26,14 @@ log = logging.getLogger(__name__)
 
 JUDGE_WEIGHTS = {"on_topic": 2.0, "new_fact": 2.0, "concrete": 1.5, "actionable": 2.0, "major": 2.5}
 NOISE_PENALTY = 4.0
-CRITERIA_LABELS = {"on_topic": "dans l'axe", "new_fact": "fait nouveau", "concrete": "concret",
-                   "actionable": "actionnable", "major": "impact large", "noise": "bruit"}
+CRITERIA_LABELS = {
+    "on_topic": "dans l'axe",
+    "new_fact": "fait nouveau",
+    "concrete": "concret",
+    "actionable": "actionnable",
+    "major": "impact large",
+    "noise": "bruit",
+}
 
 
 def extract_text(url: str) -> str | None:
@@ -115,12 +122,17 @@ def executive_summary(llm: LLM, cfg: Config, axes: list[dict]) -> str:
 
 
 def _parallel(fn, items: list, workers: int) -> list:
-    """Appels LLM en parallèle ; renvoie (item, résultat | exception). Les écritures en base restent au thread appelant."""
+    """Appels LLM en parallèle ; renvoie (item, résultat | exception).
+
+    Les écritures en base restent au thread appelant (sqlite3 n'est pas partagé entre threads).
+    """
+
     def safe(it):
         try:
             return it, fn(it)
         except (ValueError, httpx.HTTPError) as e:
             return it, e
+
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         return list(pool.map(safe, items))
 
@@ -149,8 +161,15 @@ def process_axis(llm: LLM, cfg: Config, conn: sqlite3.Connection, axis: Axis, si
         conn.execute(
             """UPDATE article_axes SET heuristic = ?, llm_score = ?, llm_reason = ?, llm_detail = ?, llm_model = ?
                WHERE article_id = ? AND axis = ?""",
-            (it["score_h"], it["llm_score"], it["llm_reason"],
-             json.dumps(it["criteria"]) if it["criteria"] else None, it.get("llm_model"), it["id"], axis.key),
+            (
+                it["score_h"],
+                it["llm_score"],
+                it["llm_reason"],
+                json.dumps(it["criteria"]) if it["criteria"] else None,
+                it.get("llm_model"),
+                it["id"],
+                axis.key,
+            ),
         )
     conn.commit()
 
@@ -174,14 +193,21 @@ def process_axis(llm: LLM, cfg: Config, conn: sqlite3.Connection, axis: Axis, si
     for it, res in _parallel(lambda it: summarize(llm, cfg, it), todo, cfg.llm.max_workers):
         if isinstance(res, Exception):
             log.warning("résumé échoué « %s » : %s", it["title"], res)
-            it["digest"] = {"tldr": (it.get("summary") or "")[:300], "key_points": [], "why_it_matters": "",
-                            "tags": [], "text_source": "rss", "failed": True}
+            it["digest"] = {
+                "tldr": (it.get("summary") or "")[:300],
+                "key_points": [],
+                "why_it_matters": "",
+                "tags": [],
+                "text_source": "rss",
+                "failed": True,
+            }
             continue
         res["text_source"] = "page" if it["content"] else "rss"
         res["cache_key"] = summary_key
         it["digest"] = res
-        conn.execute("UPDATE articles SET llm_summary = ? WHERE id = ?",
-                     (json.dumps(res, ensure_ascii=False), it["id"]))
+        conn.execute(
+            "UPDATE articles SET llm_summary = ? WHERE id = ?", (json.dumps(res, ensure_ascii=False), it["id"])
+        )
     conn.commit()
     for it in kept:
         if it["digest"].get("text_source") == "rss":
@@ -191,8 +217,23 @@ def process_axis(llm: LLM, cfg: Config, conn: sqlite3.Connection, axis: Axis, si
     synthesis = synthesize(llm, cfg, axis, kept)
 
     def card(it: dict) -> dict:
-        return {k: it.get(k) for k in ("id", "title", "url", "source", "published", "llm_score", "llm_reason",
-                                       "criteria", "score_h", "coverage", "related", "digest")}
+        return {
+            k: it.get(k)
+            for k in (
+                "id",
+                "title",
+                "url",
+                "source",
+                "published",
+                "llm_score",
+                "llm_reason",
+                "criteria",
+                "score_h",
+                "coverage",
+                "related",
+                "digest",
+            )
+        }
 
     return {
         "key": axis.key,
@@ -210,9 +251,7 @@ def run(cfg: Config, conn: sqlite3.Connection, only_axes: list[str] | None = Non
     now = datetime.now(timezone.utc)
     since = (now - timedelta(days=cfg.pipeline.lookback_days)).isoformat()
     axes = [
-        process_axis(llm, cfg, conn, axis, since)
-        for key, axis in cfg.axes.items()
-        if not only_axes or key in only_axes
+        process_axis(llm, cfg, conn, axis, since) for key, axis in cfg.axes.items() if not only_axes or key in only_axes
     ]
     return {
         "generated_at": now.isoformat(timespec="minutes"),

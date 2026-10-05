@@ -3,6 +3,7 @@
 Le HTML est rendu directement depuis les données (plus dérivé du Markdown) : chaque article est un
 <article> avec ses attributs data-*, ce qui permet cartes, couleurs par axe et filtres côté client.
 """
+
 from __future__ import annotations
 
 import copy
@@ -23,8 +24,12 @@ env = Environment(
     keep_trailing_newline=True,
 )
 
-CRITERIA_LABELS = {"new_fact": "fait nouveau", "concrete": "concret", "actionable": "actionnable",
-                   "major": "impact large"}
+CRITERIA_LABELS = {
+    "new_fact": "fait nouveau",
+    "concrete": "concret",
+    "actionable": "actionnable",
+    "major": "impact large",
+}
 
 
 # ---------- filtres Markdown (export texte) ----------
@@ -76,6 +81,7 @@ def _cite_link(axis: str, n: int, item: dict, seen: set[str], label: str) -> str
 
 def link_citations(html: str, axes: dict[str, dict], default_axis: str | None, seen: set[str]) -> Markup:
     """[n] (synthèse d'axe) et [axe:n] (résumé exécutif) -> pastilles cliquables avec aperçu."""
+
     def repl(m: re.Match) -> str:
         axis, n = (m.group(1) or default_axis), int(m.group(2))
         items = axes.get(axis, {}).get("items", []) if axis else []
@@ -83,6 +89,7 @@ def link_citations(html: str, axes: dict[str, dict], default_axis: str | None, s
             return m.group(0)
         label = f"{n}" if m.group(1) is None else f"{axis} {n}"
         return _cite_link(axis, n, items[n - 1], seen, label)
+
     return Markup(re.sub(r"\[(?:([\w-]+):)?(\d+)\]", repl, html))
 
 
@@ -98,8 +105,9 @@ def _context(data: dict) -> dict:
             crit = it.get("criteria") or {}
             it["criteria_labels"] = [label for k, label in CRITERIA_LABELS.items() if crit.get(k)]
         a["synthesis_html"] = link_citations(md_inline(a["synthesis"]), by_key, a["key"], seen)
-    exec_html = link_citations(markdown.markdown(htmllib.escape(data.get("executive_summary") or "")),
-                               by_key, None, seen)
+    exec_html = link_citations(
+        markdown.markdown(htmllib.escape(data.get("executive_summary") or "")), by_key, None, seen
+    )
     sources = sorted({it["source"] for a in axes for it in a["items"] + a["others"]})
     plain_exec = re.sub(r"\[[\w-]*:?\d+\]|^[-*]\s*", "", data.get("executive_summary") or "", flags=re.M)
     return {
@@ -126,7 +134,8 @@ def render(data: dict, out_dir: Path) -> tuple[Path, Path, Path]:
     paths[2].write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     shutil.copyfile(paths[2], out_dir / "latest.json")
     (out_dir / "latest.html").write_text(
-        env.get_template("redirect.html.j2").render(target=paths[1].name), encoding="utf-8")
+        env.get_template("redirect.html.j2").render(target=paths[1].name), encoding="utf-8"
+    )
     return paths
 
 
@@ -136,15 +145,19 @@ def render_index(reports: list[dict], out_dir: Path) -> Path:
     for r in reports:
         data = json.loads(r["data"])
         items = [(it["llm_score"] or 0, it["title"], a["title"]) for a in data["axes"] for it in a["items"]]
-        entries.append({
-            "file": Path(r["path_html"]).name,
-            "date": data["generated_at"][:16].replace("T", " "),
-            "model": data.get("model", ""),
-            "kept": len(items),
-            "axes": [{"title": a["title"], "n": len(a["items"]), "hue": axis_hue(a["key"], i)}
-                     for i, a in enumerate(data["axes"])],
-            "top": [t for _, t, _ in sorted(items, key=lambda x: -x[0])[:3]],
-        })
+        entries.append(
+            {
+                "file": Path(r["path_html"]).name,
+                "date": data["generated_at"][:16].replace("T", " "),
+                "model": data.get("model", ""),
+                "kept": len(items),
+                "axes": [
+                    {"title": a["title"], "n": len(a["items"]), "hue": axis_hue(a["key"], i)}
+                    for i, a in enumerate(data["axes"])
+                ],
+                "top": [t for _, t, _ in sorted(items, key=lambda x: -x[0])[:3]],
+            }
+        )
     path = out_dir / "index.html"
     path.write_text(env.get_template("index.html.j2").render(entries=entries), encoding="utf-8")
     return path

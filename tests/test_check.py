@@ -1,4 +1,5 @@
 """Tests hors-ligne de la vérification des sources (serveur HTTP simulé)."""
+
 import json
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -14,9 +15,9 @@ NOW = datetime.now(timezone.utc)
 
 def rss(items):
     body = "".join(
-        f"<item><title>{t}</title>{f'<link>{l}</link>' if l else ''}<guid>{g}</guid>"
-        f"<pubDate>{format_datetime(d)}</pubDate></item>"
-        for t, l, g, d in items
+        f"<item><title>{title}</title>{f'<link>{link}</link>' if link else ''}<guid>{guid}</guid>"
+        f"<pubDate>{format_datetime(date)}</pubDate></item>"
+        for title, link, guid, date in items
     )
     return f'<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>{body}</channel></rss>'
 
@@ -26,11 +27,31 @@ ROUTES = {
     "/hf": (200, "application/xml", rss([("Sans lien", None, "https://hf.co/blog/post", NOW)])),
     "/old": (200, "application/rss+xml", rss([("Vieux", "https://ex.com/v", "2", NOW - timedelta(days=200))])),
     "/blocked": (403, "text/html", "Forbidden"),
-    "/page": (200, "text/html", '<html><head><link rel="alternate" type="application/rss+xml" href="/feed.xml"></head></html>'),
-    "/kev": (200, "application/json", json.dumps({"vulnerabilities": [{
-        "cveID": "CVE-2026-1111", "vendorProject": "Acme", "product": "VPN", "vulnerabilityName": "RCE",
-        "dateAdded": NOW.date().isoformat(), "shortDescription": "Bug.", "requiredAction": "Patcher.",
-        "knownRansomwareCampaignUse": "Known"}]})),
+    "/page": (
+        200,
+        "text/html",
+        '<html><head><link rel="alternate" type="application/rss+xml" href="/feed.xml"></head></html>',
+    ),
+    "/kev": (
+        200,
+        "application/json",
+        json.dumps(
+            {
+                "vulnerabilities": [
+                    {
+                        "cveID": "CVE-2026-1111",
+                        "vendorProject": "Acme",
+                        "product": "VPN",
+                        "vulnerabilityName": "RCE",
+                        "dateAdded": NOW.date().isoformat(),
+                        "shortDescription": "Bug.",
+                        "requiredAction": "Patcher.",
+                        "knownRansomwareCampaignUse": "Known",
+                    }
+                ]
+            }
+        ),
+    ),
 }
 
 
@@ -38,6 +59,7 @@ def client():
     def handler(req):
         code, ctype, body = ROUTES.get(req.url.path, (404, "text/plain", "nope"))
         return httpx.Response(code, headers={"content-type": ctype}, text=body)
+
     return httpx.Client(transport=httpx.MockTransport(handler), base_url="https://test")
 
 
@@ -73,8 +95,10 @@ def test_cisa_kev_json():
 
 
 def test_discover_in_html_relative_and_atom():
-    html = ('<link rel="alternate" type="application/atom+xml" href="/atom.xml">'
-            '<link rel="stylesheet" href="/s.css"><link type="application/rss+xml" rel="alternate" href="https://x.org/rss">')
+    html = (
+        '<link rel="alternate" type="application/atom+xml" href="/atom.xml">'
+        '<link rel="stylesheet" href="/s.css"><link type="application/rss+xml" rel="alternate" href="https://x.org/rss">'
+    )
     assert discover_in_html(html, "https://site.fr/blog/") == ["https://site.fr/atom.xml", "https://x.org/rss"]
 
 

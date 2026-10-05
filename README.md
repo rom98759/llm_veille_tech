@@ -136,8 +136,11 @@ Sources sans RSS : beaucoup de sites en ont un caché (`/feed`, `/rss`, `/atom.x
 - Prompts : `veille/prompts.py` ; poids de la grille : `JUDGE_WEIGHTS` dans `veille/process.py`. Modifier un prompt → incrémenter `JUDGE_VERSION` / `SUMMARY_VERSION` pour invalider le cache.
 - Données brutes pour analyse : `sqlite3 data/veille.db` — tables `articles` (texte complet, résumé JSON), `article_axes` (notes par axe), `reports` (JSON de chaque rapport).
 
-## Tests
+## Développement
 
 ```bash
-pip install -e '.[dev]' && pytest
+make install   # dépendances figées + ruff + pytest + hook pre-commit
+make check     # lint + format + tests (identique à la CI)
 ```
+
+Conventions (branches, Conventional Commits, changelog) : [CONTRIBUTING.md](CONTRIBUTING.md). Historique des versions : [CHANGELOG.md](CHANGELOG.md).

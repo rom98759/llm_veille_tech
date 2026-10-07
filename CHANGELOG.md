@@ -7,6 +7,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [Sem
 ### Modifié
 - Nouveau design du rapport et de l'historique (maquette Claude Design) : titre et résumé mis en avant, note de pertinence en information secondaire, bloc « L'essentiel », navigation entre rapports, historique groupé par mois avec répartition par axe.
 - Résumé par article bien plus complet : champ `summary` de 5 à 8 phrases en plus de l'accroche, jusqu'à 5 points clés (`SUMMARY_VERSION` incrémentée : les résumés en cache sont régénérés).
+- Refonte éditoriale du rapport : fiches séparées et numérotées (filet de couleur d'axe plutôt que cartes boîtées), typographie serif/sans dédiée, note de pertinence retirée de l'affichage (gardée en interne pour le filtre), résumé complet replié par défaut avec lien direct vers l'article source.
+
+### Ajouté
+- `veille -v report` logge désormais chaque requête/réponse LLM complète et les tokens/s réels côté serveur (utile pour auditer ou comparer des modèles).
+- Licence MIT.
 
 ## [0.1.0] - 2026-10-05
 

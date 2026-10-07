@@ -16,10 +16,10 @@
 
 <br><br>
 
-<img src="docs/screenshots/article-light.png" width="48%" alt="Fiche article dépliée, thème clair">
-<img src="docs/screenshots/mobile.png" width="48%" alt="Rapport sur mobile">
+<img src="docs/screenshots/article-dark.png" width="48%" alt="Fiches article, vue desktop">
+<img src="docs/screenshots/mobile.png" width="48%" alt="Fiche dépliée sur mobile">
 
-<sub>Thème clair, fiche article dépliée · responsive mobile</sub>
+<sub>Vue desktop · fiche dépliée sur mobile (responsive, thème clair/sombre disponible)</sub>
 
 </div>
 

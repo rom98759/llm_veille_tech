@@ -1,42 +1,44 @@
 /* Thème commun (rapport + historique). Polices IBM Plex si installées, sinon police système : aucune ressource externe. */
 :root {
-  --bg: #F3F4F6; --card: #FFFFFF; --fg: #111418; --fg2: #252A31; --muted: #4A5260; --border: #DADDE3;
-  --soft: #EEF0F3; --accent: #1F4FBF; --accent-hover: #163A8F;
-  --hero-bg: #111418; --hero-fg: #F3F4F6; --hero-muted: #B9C0CB; --hero-num: #8B95A3;
-  --warn-bg: #FFF4D6; --warn-fg: #6B4A00; --tint: 9%;
-  --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --radius: 16px; --gutter: 24px; --wrap: 1240px;
+  --bg: #FAF9F5; --card: #FAF9F5; --fg: #141413; --fg2: #2E2A24; --muted: #8A8374; --border: #E6E1D6;
+  --soft: #F2EFE7; --accent: #1F3FCC; --accent-hover: #15308F;
+  --hero-bg: #FAF9F5; --hero-fg: #141413; --hero-muted: #8A8374; --hero-num: #E6E1D6;
+  --warn-bg: #FFF4D6; --warn-fg: #6B4A00; --tint: 7%;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px; --gutter: 24px; --wrap: 1240px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E1013; --card: #171A1F; --fg: #E8EAED; --fg2: #CDD1D7; --muted: #9AA3AF; --border: #2A2F37;
-    --soft: #20242B; --accent: #8DB0FF; --accent-hover: #B3CBFF;
-    --hero-bg: #1C2028; --hero-fg: #E8EAED; --hero-muted: #9AA3AF; --hero-num: #7D8693;
-    --warn-bg: #3A2E0A; --warn-fg: #F5D98B; --tint: 16%; color-scheme: dark;
+    --bg: #141413; --card: #141413; --fg: #F3F1EC; --fg2: #D8D4C9; --muted: #8C8577; --border: #2A2924;
+    --soft: #1C1B17; --accent: #7FA0F0; --accent-hover: #A8C0F5;
+    --hero-bg: #141413; --hero-fg: #F3F1EC; --hero-muted: #8C8577; --hero-num: #2A2924;
+    --warn-bg: #3A2E0A; --warn-fg: #F5D98B; --tint: 10%; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0E1013; --card: #171A1F; --fg: #E8EAED; --fg2: #CDD1D7; --muted: #9AA3AF; --border: #2A2F37;
-  --soft: #20242B; --accent: #8DB0FF; --accent-hover: #B3CBFF;
-  --hero-bg: #1C2028; --hero-fg: #E8EAED; --hero-muted: #9AA3AF; --hero-num: #7D8693;
-  --warn-bg: #3A2E0A; --warn-fg: #F5D98B; --tint: 16%; color-scheme: dark;
+  --bg: #141413; --card: #141413; --fg: #F3F1EC; --fg2: #D8D4C9; --muted: #8C8577; --border: #2A2924;
+  --soft: #1C1B17; --accent: #7FA0F0; --accent-hover: #A8C0F5;
+  --hero-bg: #141413; --hero-fg: #F3F1EC; --hero-muted: #8C8577; --hero-num: #2A2924;
+  --warn-bg: #3A2E0A; --warn-fg: #F5D98B; --tint: 10%; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--sans); }
-a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--accent-hover); text-decoration: underline; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--serif); }
+a { color: var(--fg); text-decoration: none; }
+a:hover { color: var(--muted); text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .mono { font-family: var(--mono); }
+.sans { font-family: var(--sans); }
 .muted { color: var(--muted); }
 .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--gutter); }
 @media (max-width: 640px) { :root { --gutter: 16px; } }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.eyebrow { font-family: var(--sans); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--muted); }
 
 /* Couleur d'axe : --axis est posé en style inline sur l'élément ; --axis-ink est lisible sur le fond. */
 .axis { --axis-ink: var(--axis); }
@@ -45,7 +47,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--axis); flex: none; display: inline-block; }
 
 /* En-tête du site */
-.site-header { background: var(--card); border-bottom: 1px solid var(--border); }
+.site-header { background: var(--card); border-bottom: 1px solid var(--border); font-family: var(--sans); }
 .site-header .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-block: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--fg); font-weight: 700; font-size: 18px; }
 .brand:hover { text-decoration: none; color: var(--fg); }
@@ -56,9 +58,9 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .site-nav a:hover { text-decoration: none; color: var(--fg); }
 .icon-btn { width: 44px; height: 44px; border: 1px solid var(--border); background: var(--card); color: var(--fg);
             border-radius: 10px; cursor: pointer; display: inline-grid; place-items: center; }
-.site-footer { border-top: 1px solid var(--border); background: var(--card); }
+.site-footer { border-top: 1px solid var(--border); background: var(--card); font-family: var(--sans); }
 .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-block: 24px; font-size: 14px; color: var(--muted); }
 .site-footer .links { margin-left: auto; display: flex; gap: 20px; }
 
-.field { height: 44px; border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; font: inherit;
+.field { height: 44px; border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; font-family: var(--sans); font-size: inherit;
          font-size: 15px; color: var(--fg); background: var(--card); }

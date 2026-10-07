@@ -32,7 +32,7 @@ CRITERIA_LABELS = {
     "major": "impact large",
 }
 # Couleurs des premiers axes (teintes et clartés distinctes), puis angle d'or pour les suivants.
-AXIS_COLORS = ["#1F5FD1", "#A34A0B", "#0E7268", "#7A3EB8", "#B0265E", "#5A6B00"]
+AXIS_COLORS = ["#1F3FCC", "#C2410C", "#15803D", "#7A3EB8", "#B0265E", "#5A6B00"]
 DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 MONTHS = [
     "janvier", "février", "mars", "avril", "mai", "juin",

@@ -13,29 +13,24 @@
 <style>
 {% include "_theme.css" %}
 /* Bandeau du rapport */
-.hero { padding-block: 44px 20px; }
-.hero-nav { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font: 13px var(--mono); color: var(--muted); }
+.hero { padding-block: 72px 20px; }
+.hero-nav { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font: 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .hero-nav a { color: var(--muted); }
-.hero h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.025em; margin: 12px 0 22px; font-weight: 700; }
+.hero h1 { font-size: clamp(38px, 5.5vw, 58px); line-height: 1.08; letter-spacing: -.015em; margin: 16px 0 10px; font-weight: 500; }
 .hero h1::first-letter { text-transform: uppercase; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; }
-.stat b { display: block; font-size: 26px; line-height: 1.15; }
-.stat b.mono { font-size: 16px; line-height: 1.9; font-weight: 600; overflow-wrap: anywhere; }
-.stat span { font-size: 14px; color: var(--muted); }
+.hero .sub { font: 16px var(--sans); color: var(--muted); margin: 0 0 90px; }
+@media (max-width: 640px) { .hero .sub { margin-bottom: 56px; } }
 
 /* L'essentiel */
-.essential { background: var(--hero-bg); color: var(--hero-fg); border-radius: var(--radius); padding: 28px 32px; margin-block: 8px 28px; }
-@media (max-width: 640px) { .essential { padding: 20px; } }
-.essential h2 { margin: 0 0 16px; font: 500 13px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--hero-muted); }
-.essential ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; counter-reset: ess; }
-.essential li { display: flex; gap: 16px; align-items: baseline; counter-increment: ess; }
-.essential li::before { content: counter(ess, decimal-leading-zero); font: 14px var(--mono); color: var(--hero-num); flex: none; }
-.essential .txt { font-size: 20px; line-height: 1.45; flex: 1; }
-@media (max-width: 640px) { .essential .txt { font-size: 17px; } }
+.essential { padding-block: 0 0; margin-block: 8px 100px; }
+.essential h2 { margin: 0 0 24px; }
+.essential ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 28px; }
+.essential li { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; }
+.essential .txt { font-size: 22px; line-height: 1.5; flex: 1 1 420px; min-width: 260px; margin: 0; }
+@media (max-width: 640px) { .essential .txt { font-size: 19px; } }
 .essential .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { font: 13px var(--mono); color: #fff; background: var(--axis); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
-.chip:hover { color: #fff; text-decoration: none; filter: brightness(1.12); }
+.chip { font: 600 12px var(--sans); color: var(--axis-ink); background: none; border: 1px solid var(--axis); border-radius: 999px; padding: 2px 9px; white-space: nowrap; opacity: .85; }
+.chip:hover { text-decoration: none; opacity: 1; }
 
 /* Mise en page */
 .layout { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; padding-bottom: 64px; }
@@ -68,44 +63,53 @@
 }
 
 /* Sections d'axe */
-section.axis-section { margin-bottom: 64px; scroll-margin-top: 150px; }
-.axis-bar { height: 4px; width: 56px; background: var(--axis); border-radius: 2px; }
-.axis-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 12px 0 10px; }
-.axis-head h2 { margin: 0; font-size: 30px; letter-spacing: -.015em; }
-.axis-head .mono { font-size: 13px; color: var(--muted); }
+section.axis-section { margin-bottom: 20px; scroll-margin-top: 150px; }
+.axis-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin: 0 0 4px; }
+.axis-head h2 { margin: 0; font-size: 42px; font-weight: 500; letter-spacing: -.015em; }
+.axis-head .sans { font-size: 12px; color: var(--muted); }
+.axis-bar { height: 3px; width: 56px; background: var(--axis); border-radius: 2px; margin-bottom: 52px; }
 .synthesis { font-size: 18px; line-height: 1.7; margin: 0 0 28px; color: var(--fg2); }
-a.cite { font: 600 12px var(--mono); vertical-align: 2px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px;
+a.cite { font: 600 12px var(--sans); vertical-align: 2px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px;
          color: var(--axis-ink); background: var(--card); margin: 0 1px; }
 a.cite:hover { border-color: var(--axis); text-decoration: none; }
 
-/* Fiche article : titre et résumé d'abord */
-.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 30px; margin-bottom: 20px;
-        scroll-margin-top: 150px; transition: box-shadow .15s; }
-@media (max-width: 640px) { .card { padding: 20px; } }
-.card:hover { box-shadow: 0 6px 24px rgb(0 0 0 / .06); }
-.card:target { outline: 2px solid var(--axis); outline-offset: 2px; }
-.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font: 13px var(--mono); color: var(--muted); }
-.card-meta .src { color: var(--fg); font-weight: 600; }
+/* Fiche article : séparée, numérotée, lecture d'abord */
+.card { display: flex; flex-wrap: wrap; gap: 20px 40px; padding: 76px 0 76px 26px; border-left: 3px solid var(--axis);
+        scroll-margin-top: 150px; }
+@media (max-width: 640px) { .card { padding: 48px 0 48px 18px; gap: 14px 28px; } }
+.card:target { outline: 2px solid var(--axis); outline-offset: 6px; }
+.card-rail { flex: 0 0 110px; }
+.card-rail .num { font: 300 60px/1 var(--serif); letter-spacing: -.03em; color: var(--axis); opacity: .3; }
+@media (max-width: 640px) { .card-rail { flex-basis: auto; } .card-rail .num { font-size: 36px; } }
+.card-body { flex: 1 1 500px; min-width: 280px; }
+.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font: 600 13px var(--sans); color: var(--muted); margin-bottom: 18px; }
+.card-meta .src { color: var(--fg); }
 .card-meta .cov { color: var(--axis-ink); }
 .card-meta .warn { background: var(--warn-bg); color: var(--warn-fg); border-radius: 6px; padding: 0 6px; }
-.card-meta .score { margin-left: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0 7px; font-size: 12px; }
-.card h3 { margin: 10px 0 0; font-size: 26px; line-height: 1.28; letter-spacing: -.012em; font-weight: 700; }
-@media (max-width: 640px) { .card h3 { font-size: 22px; } }
+.card h3 { margin: 0 0 14px; font-size: 32px; line-height: 1.2; letter-spacing: -.012em; font-weight: 500; }
+@media (max-width: 640px) { .card h3 { font-size: 24px; } }
 .card h3 a { color: var(--fg); }
-.card h3 a:hover { color: var(--accent); }
-.lead { font-size: 19px; line-height: 1.5; font-weight: 500; margin: 14px 0 0; color: var(--fg); }
-.summary { font-size: 17.5px; line-height: 1.75; color: var(--fg2); margin-top: 14px; }
+.card h3 a:hover { color: var(--muted); }
+.lead { font-size: 19px; line-height: 1.6; font-weight: 600; margin: 0 0 20px; color: var(--fg); max-width: 620px; }
+.more { margin-top: 6px; }
+.more > summary { cursor: pointer; list-style: none; font: 600 14px var(--sans); color: var(--axis-ink); }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: "Lire le résumé complet ↓"; }
+.more[open] > summary { margin-bottom: 20px; }
+.more[open] > summary::before { content: "Replier ↑"; color: var(--muted); }
+.summary { font-size: 16.5px; line-height: 1.8; color: var(--fg2); max-width: 620px; }
 .summary p { margin: 0 0 12px; }
-.points { margin: 4px 0 0; padding-left: 20px; color: var(--fg2); font-size: 16.5px; }
+.points { margin: 4px 0 20px; padding-left: 20px; color: var(--fg2); font-size: 16px; max-width: 600px; }
 .points li { margin: 6px 0; }
 .points li::marker { color: var(--axis-ink); }
-.matters { background: color-mix(in srgb, var(--axis) var(--tint), var(--card)); border-radius: 12px; padding: 14px 16px; margin-top: 18px; font-size: 16px; }
+.matters { background: color-mix(in srgb, var(--axis) var(--tint), var(--card)); border-radius: 10px; padding: 14px 16px; margin: 0 0 20px; font-size: 16px; max-width: 600px; }
 .matters .eyebrow { color: var(--axis-ink); margin-bottom: 2px; font-size: 11px; }
-.card-foot { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 18px; font-size: 14px; }
+.card-foot { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; font-size: 14px; }
+.card-foot .original { font: 600 14px var(--sans); color: var(--axis-ink); }
 .tag { height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); font: inherit;
        font-size: 13px; color: var(--fg2); cursor: pointer; }
 .tag:hover { border-color: var(--muted); }
-.card-foot .crit { font: 12px var(--mono); color: var(--muted); }
+.card-foot .crit { font: 12px var(--sans); color: var(--muted); }
 .card-foot .spacer { flex: 1; }
 .related { margin-top: 12px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
@@ -127,8 +131,8 @@ a.cite:hover { border-color: var(--axis); text-decoration: none; }
 @media print {
   :root { --bg: #fff; --card: #fff; --fg: #000; --fg2: #111; }
   .site-header, .toolbar, .toc, #top, .site-footer .links { display: none !important; }
-  .essential { background: #fff; color: #000; border: 1px solid #999; }
-  .card { break-inside: avoid; box-shadow: none; }
+  .card { break-inside: avoid; }
+  .more > summary { display: none; }
   section.axis-section + section.axis-section { break-before: page; }
   .card h3 a::after, .other a::after { content: " (" attr(href) ")"; font: 11px var(--mono); color: #555; word-break: break-all; }
   .other .reason { -webkit-line-clamp: unset; display: block; }
@@ -159,19 +163,13 @@ a.cite:hover { border-color: var(--axis); text-decoration: none; }
     <span>du {{ since_label }} au {{ until_label }}</span>
   </div>
   <h1>{{ date_long }}</h1>
-  <div class="stats">
-    <div class="stat"><b>{{ total_kept }}</b><span>articles retenus</span></div>
-    <div class="stat"><b>{{ total_scored }}</b><span>évalués par le modèle</span></div>
-    <div class="stat"><b>{{ total_collected }}</b><span>articles collectés</span></div>
-    <div class="stat"><b>{{ sources|length }}</b><span>sources</span></div>
-    <div class="stat"><b class="mono">{{ model }}</b><span>modèle local</span></div>
-  </div>
+  <p class="sub">{{ total_kept }} articles retenus sur {{ total_collected }} collectés, {{ sources|length }} sources — modèle {{ model }}</p>
 </section>
 
 {% if exec_items %}
 <section class="wrap" aria-labelledby="ess-title">
   <div class="essential">
-    <h2 id="ess-title">L'essentiel</h2>
+    <h2 id="ess-title" class="sans eyebrow">L'essentiel</h2>
     <ol>
       {% for e in exec_items %}
       <li><span class="txt">{{ e.html }}</span>
@@ -219,35 +217,41 @@ a.cite:hover { border-color: var(--axis); text-decoration: none; }
 
     {% for a in axes %}
     <section class="axis-section axis" id="{{ a.key }}" data-axis="{{ a.key }}" aria-labelledby="{{ a.key }}-title" style="--axis: {{ a.color }}">
-      <div class="axis-bar"></div>
       <div class="axis-head">
         <h2 id="{{ a.key }}-title">{{ a.title }}</h2>
-        <span class="mono">{{ a["items"]|length }} retenus · {{ a.others|length }} écartés · {{ a.total_collected }} collectés</span>
+        <span class="sans">{{ a["items"]|length }} retenus · {{ a.others|length }} écartés · {{ a.total_collected }} collectés</span>
       </div>
+      <div class="axis-bar"></div>
       {% if a.synthesis %}<p class="synthesis">{{ a.synthesis_html }}</p>{% else %}<p class="empty">Rien de notable sur la période.</p>{% endif %}
 
       {% for it in a["items"] %}
       <article class="card" id="{{ it.anchor }}" data-axis="{{ a.key }}" data-score="{{ it.llm_score }}" data-source="{{ it.source }}">
-        <div class="card-meta">
-          <span class="src">{{ it.source }}</span>
-          <time datetime="{{ it.published }}">{{ it.published[:10] }}</time>
-          {% if it.coverage and it.coverage > 1 %}<span class="cov" title="{{ it.coverage }} sources couvrent ce sujet">{{ it.coverage }} sources sur ce sujet</span>{% endif %}
-          {% if it.digest.text_source == "rss" %}<span class="warn" title="La page n'a pas pu être lue : résumé fait sur l'extrait du flux, moins complet">résumé sur extrait RSS</span>{% endif %}
-          <span class="score" title="Pertinence calculée par la grille de notation">{{ it.llm_score|fmt_score }}/10</span>
-        </div>
-        <h3><a href="{{ it.url }}" rel="noopener">{{ it.title }}</a></h3>
-        {% if it.digest.tldr %}<p class="lead">{{ it.digest.tldr|md_inline }}</p>{% endif %}
-        {% if it.digest.summary %}<div class="summary">{{ it.digest.summary|md_block }}</div>{% endif %}
-        {% if it.digest.key_points %}<ul class="points">{% for p in it.digest.key_points %}<li>{{ p|md_inline }}</li>{% endfor %}</ul>{% endif %}
-        {% if it.digest.why_it_matters %}<div class="matters"><div class="eyebrow">Pourquoi c'est important</div>{{ it.digest.why_it_matters|md_inline }}</div>{% endif %}
-        {% if it.related %}
-        <div class="related"><span class="muted">Voir aussi :</span>{% for r in it.related %}<a href="{{ r.url }}" rel="noopener" title="{{ r.title }}">{{ r.source }}</a>{% endfor %}</div>
-        {% endif %}
-        <div class="card-foot">
-          {% for t in it.digest.tags %}<button type="button" class="tag" data-tag="{{ t }}">#{{ t }}</button>{% endfor %}
-          <span class="spacer"></span>
-          {% if it.criteria_labels %}<span class="crit" title="Critères validés par la grille de notation">{{ it.criteria_labels|join(" · ") }}</span>{% endif %}
-          {% if it.cited_from %}<a href="#{{ it.cited_from }}">↑ synthèse</a>{% endif %}
+        <div class="card-rail"><span class="num">{{ "%02d"|format(loop.index) }}</span></div>
+        <div class="card-body">
+          <h3><a href="{{ it.url }}" rel="noopener">{{ it.title }}</a></h3>
+          <div class="card-meta">
+            <span class="src">{{ it.source }}</span>
+            <time datetime="{{ it.published }}">{{ it.published[:10] }}</time>
+            {% if it.coverage and it.coverage > 1 %}<span class="cov" title="{{ it.coverage }} sources couvrent ce sujet">{{ it.coverage }} sources sur ce sujet</span>{% endif %}
+            {% if it.digest.text_source == "rss" %}<span class="warn" title="La page n'a pas pu être lue : résumé fait sur l'extrait du flux, moins complet">résumé sur extrait RSS</span>{% endif %}
+          </div>
+          {% if it.digest.tldr %}<p class="lead">{{ it.digest.tldr|md_inline }}</p>{% endif %}
+          <details class="more">
+            <summary></summary>
+            {% if it.digest.summary %}<div class="summary">{{ it.digest.summary|md_block }}</div>{% endif %}
+            {% if it.digest.key_points %}<ul class="points">{% for p in it.digest.key_points %}<li>{{ p|md_inline }}</li>{% endfor %}</ul>{% endif %}
+            {% if it.digest.why_it_matters %}<div class="matters"><div class="eyebrow">Pourquoi c'est important</div>{{ it.digest.why_it_matters|md_inline }}</div>{% endif %}
+            {% if it.related %}
+            <div class="related"><span class="muted">Voir aussi :</span>{% for r in it.related %}<a href="{{ r.url }}" rel="noopener" title="{{ r.title }}">{{ r.source }}</a>{% endfor %}</div>
+            {% endif %}
+            <div class="card-foot">
+              <a class="original" href="{{ it.url }}" rel="noopener">Voir l'article original ↗</a>
+              {% for t in it.digest.tags %}<button type="button" class="tag" data-tag="{{ t }}">#{{ t }}</button>{% endfor %}
+              <span class="spacer"></span>
+              {% if it.criteria_labels %}<span class="crit" title="Critères validés par la grille de notation">{{ it.criteria_labels|join(" · ") }}</span>{% endif %}
+              {% if it.cited_from %}<a href="#{{ it.cited_from }}">↑ synthèse</a>{% endif %}
+            </div>
+          </details>
         </div>
       </article>
       {% endfor %}

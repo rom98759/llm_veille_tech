@@ -112,7 +112,9 @@ def test_html_structure_anchors_and_escaping(tmp_path):
     assert "<p>Premier paragraphe.</p>" in html and "<p>Second paragraphe.</p>" in html
     card = html[html.index('id="cyber-1"') :]
     assert card.index("<h3>") < card.index('class="lead"') < card.index('class="summary"')
-    assert '<span class="score"' in card and "9,5/10" in card
+    # note de pertinence disponible en data-attribute (filtre JS) mais plus affichée (trop saturée pour être lisible)
+    assert '<span class="score"' not in card
+    assert '<details class="more">' in card  # résumé complet replié par défaut (CSS fournit le libellé du bouton)
     assert 'href="veille-avant.html"' in html and "Rapport n° 7" in html
     assert "résumé sur extrait RSS" in html
     # autonome, ouvrable en file:// : aucune ressource externe chargée
@@ -136,7 +138,7 @@ def test_index_lists_reports(tmp_path):
 
 def test_axis_colors_distinct_then_generated():
     colors = [report.axis_color(i) for i in range(8)]
-    assert len(set(colors)) == 8 and colors[0] == "#1F5FD1" and colors[7].startswith("hsl(")
+    assert len(set(colors)) == 8 and colors[0] == "#1F3FCC" and colors[7].startswith("hsl(")
 
 
 def test_executive_items_parsing():

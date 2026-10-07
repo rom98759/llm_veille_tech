@@ -31,9 +31,28 @@ class LLM:
         if json_mode:
             body["response_format"] = {"type": "json_object"}
         body.update(self.cfg.extra_body)
+        log.debug("--- requête LLM ---\n[system]\n%s\n[user]\n%s", system, user)
         resp = self.client.post("/chat/completions", json=body)
         resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"] or ""
+        data = resp.json()
+        content = data["choices"][0]["message"]["content"] or ""
+        log.debug("--- réponse LLM brute (avec réflexion éventuelle) ---\n%s", content)
+        usage, timings = data.get("usage"), data.get("timings")
+        if usage:
+            log.debug(
+                "--- usage : %s tokens prompt, %s tokens générés (%s total)",
+                usage.get("prompt_tokens"),
+                usage.get("completion_tokens"),
+                usage.get("total_tokens"),
+            )
+        if timings:  # extension llama.cpp (absent sur Ollama/vLLM) : tokens/s réels côté serveur
+            log.debug(
+                "--- vitesse : prompt %.1f tok/s (%d tok) · génération %.1f tok/s (%d tok)",
+                timings.get("prompt_per_second", 0),
+                timings.get("prompt_n", 0),
+                timings.get("predicted_per_second", 0),
+                timings.get("predicted_n", 0),
+            )
         # modèles « raisonnants » (qwen3, deepseek-r1…) : retirer le bloc de réflexion s'il est renvoyé
         return re.sub(r"<think>.*?</think>", "", content, flags=re.S).strip()
 

@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "veille"
 version = "0.1.0"
 description = "Veille technologique locale : collecte, tri, résumé par LLM local, rapport avec sources"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
   "feedparser>=6.0,<7",

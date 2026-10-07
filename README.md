@@ -1,8 +1,23 @@
-# llm_veille_tech
+<div align="center">
 
-Veille technologique 100 % locale : flux RSS → pré-tri → jugement et résumé par un LLM local → rapport Markdown/HTML/JSON sur un template commun, avec **tous les liens conservés** (SQLite).
+# veille
 
-> Comparaison en cours avec Miniflux / miniflux-ai / betternews : voir [`bench/PROTOCOLE.md`](bench/PROTOCOLE.md).
+**Veille technologique 100 % locale.** Des flux RSS à un rapport lisible, triés et résumés par un LLM qui tourne sur ta machine — rien ne sort du poste.
+
+[![CI](https://github.com/rom98759/llm_veille_tech/actions/workflows/ci.yml/badge.svg)](https://github.com/rom98759/llm_veille_tech/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+
+<img src="docs/screenshots/hero-dark.jpg" width="49%" alt="Rapport veille, en-tête, thème sombre">
+<img src="docs/screenshots/article-light.jpg" width="49%" alt="Fiche article, thème clair">
+
+</div>
+
+## Pourquoi
+
+Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agrégateurs IA grand public envoient le contenu dans le cloud. **veille** fait le tri à la place de l'utilisateur, avec un LLM local (Ollama, llama.cpp, LM Studio, vLLM — n'importe quel serveur compatible OpenAI) : chaque article est jugé contre un profil d'intérêt défini en config, noté par une grille de critères (pas une note libre qui sature), résumé en 5-8 phrases, puis compilé en rapport HTML autonome avec synthèse par axe, citations traçables et historique interrogeable en SQLite.
+
+Rien ne quitte la machine. Aucune clé API requise pour l'usage courant.
 
 ## Pipeline
 
@@ -43,12 +58,14 @@ Tout serveur compatible OpenAI fonctionne (`llm.base_url`) : Ollama, llama.cpp `
 
 | Taille | Constat | Usage |
 |---|---|---|
-| 3-4B (ex. `qwen3-4b`) | **Testé** : pipeline complet OK, ~13 s/appel, mais synthèses creuses (« Des mises à jour de sécurité sont publiées le vendredi pour Linux. ») | notation seule, ou machine sans GPU |
-| 7-9B (`qwen3:8b`, `qwen2.5:7b-instruct`, `llama3.1:8b`, `gemma2:9b`) | non testé ici ; bon compromis attendu | défaut conseillé |
-| 14-32B (ex. `qwen3.8-27b`) | non testé ici ; meilleures synthèses attendues, plus lent | si la VRAM le permet |
+| 3-4B (ex. `qwen3-4b`, `qwen3.5-4b`) | **Testé** : rapide (≤ 2 s/appel sur GPU modeste), mais la notation sature régulièrement à 10/10 — le tri perd son intérêt | machine sans GPU, ou simple résumé sans tri fin |
+| 7-9B (ex. `qwen3.5-9b`) | **Testé** : meilleure discrimination des notes sur certains axes, mais inconsistant (un axe peut quand même saturer), 3× plus lent qu'un MoE équivalent | compromis correct si la RAM est le facteur limitant |
+| 30B+ en MoE (ex. `qwen3-30b-a3b`) | **Testé** : nette discrimination des notes, rapide (peu de paramètres actifs par token malgré la taille totale) | recommandé si la RAM suit — le fichier complet doit tenir en mémoire même en MoE |
+| Cloud (API compatible OpenAI) | Pas de limite matérielle, résultat quasi instantané | si la contrainte « 100 % local » n'est pas absolue ; pointer `llm.base_url` vers le fournisseur, clé API en variable d'environnement |
 
-- Modèles « raisonnants » (qwen3…) : le bloc `<think>` renvoyé est retiré automatiquement ; pour le couper à la source et gagner du temps, `llm.extra_body` (ex. `{reasoning_effort: none}`, à vérifier selon ta version d'Ollama).
-- Parallélisme : `llm.max_workers: 2` n'accélère que si le serveur traite plusieurs requêtes (`OLLAMA_NUM_PARALLEL=2` ou plus).
+- Modèles « raisonnants » (qwen3…) : le bloc `<think>` renvoyé est retiré automatiquement ; pour le couper à la source et gagner du temps, `llm.extra_body` (ex. `{reasoning_effort: none}`) ou `--reasoning off` côté serveur selon le backend.
+- Parallélisme : `llm.max_workers` n'accélère que si le serveur traite plusieurs requêtes en parallèle (`n_slots` côté llama.cpp, `OLLAMA_NUM_PARALLEL` côté Ollama).
+- `veille -v report` logge chaque requête/réponse complète et les tokens/s réels (extension `timings` de llama.cpp) — utile pour auditer ou comparer des modèles.
 
 ## Utilisation
 
@@ -68,8 +85,8 @@ veille export-opml --out feeds.opml   # flux au format OPML (Miniflux, FreshRSS�
 
 Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique de tous les rapports), `latest.html` (redirige vers le dernier) et `latest.json`.
 
-Le rapport HTML est pensé pour **s'informer** : chaque fiche met en avant le **titre**, une phrase d'accroche puis un **résumé complet de 5 à 8 phrases** (contexte, faits, détails techniques, conséquences), les points clés et « pourquoi c'est important ». La note de pertinence reste discrète (elle sert au tri, pas à la lecture).
-Autour : bloc « L'essentiel » (résumé exécutif avec renvois vers les fiches), synthèse par axe avec citations `[n]` cliquables, couleur par axe, sommaire fixe, recherche et filtres (source, pertinence, axe, clic sur un tag), liens écartés avec la raison, navigation vers le rapport précédent, thème clair/sombre, impression propre. Polices IBM Plex si installées sur le poste, sinon police système.
+Le rapport HTML est pensé pour **donner envie de lire** : chaque fiche met en avant le **titre** et une **accroche**, le résumé complet (5-8 phrases), les points clés et « pourquoi c'est important » restent repliés par défaut (`<details>` natif, un clic pour tout voir, lien direct vers la source). La note de pertinence ne s'affiche plus — elle reste trop bruitée avec un petit modèle pour servir à la lecture, elle continue de piloter le tri en coulisses.
+Autour : bloc « L'essentiel » (résumé exécutif avec renvois vers les fiches), synthèse par axe avec citations `[n]` cliquables, couleur par axe, sommaire fixe, recherche et filtres (source, pertinence, axe, clic sur un tag), liens écartés avec la raison, navigation vers le rapport précédent, thème clair/sombre, impression propre, responsive mobile/desktop. Typographie serif/sans système (aucune ressource externe chargée).
 
 ### Vérifier les sources (à faire en premier)
 
@@ -96,7 +113,7 @@ Points connus :
 - **CISA** a retiré ses flux RSS (mai 2025) → source `kind: cisa_kev` qui lit le catalogue JSON des vulnérabilités activement exploitées.
 - **Anthropic** n'a pas de flux officiel → flux communautaires (GitHub) dans le catalogue.
 - **Hugging Face** : items sans `<link>` → repli automatique sur `<guid>`.
-- **Reddit** : `www.reddit.com/r/<sub>/.rss` fonctionne, `old.reddit.com` exige un login ; 403 possibles selon l'IP.
+- **Reddit** : `www.reddit.com/r/<sub>/.rss` fonctionne, `old.reddit.com` exige un login ; 403/429 intermittents selon l'IP et le moment, pas un bug — géré par retry + warning.
 - **Phoronix, Cloudflare** : protection anti-bot, 403 fréquents depuis des IP de datacenter (moins depuis une IP résidentielle).
 
 ### Planification
@@ -145,3 +162,7 @@ make check     # lint + format + tests (identique à la CI)
 ```
 
 Conventions (branches, Conventional Commits, changelog) : [CONTRIBUTING.md](CONTRIBUTING.md). Historique des versions : [CHANGELOG.md](CHANGELOG.md).
+
+## À propos
+
+Projet personnel, construit avec l'aide d'un assistant IA (Claude) en pair-programming — architecture, décisions et tests validés manuellement à chaque étape, pas de génération en pilote automatique. Licence [MIT](LICENSE).

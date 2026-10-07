@@ -1,0 +1,93 @@
+# veille
+
+> Veille technologique 100 % locale : collecte RSS/Atom, pré-tri heuristique, notation et résumé
+> par un LLM local (API compatible OpenAI), rendu en rapport HTML/Markdown/JSON. Tout est stocké
+> en SQLite. Aucune donnée ne quitte la machine par défaut.
+
+Ce fichier suit la convention [llms.txt](https://llmstxt.org/), adaptée à un outil CLI plutôt qu'un
+site de doc : carte factuelle du projet pour qu'un agent IA comprenne vite l'architecture sans
+devoir lire tout le code. Le [README](README.md) est le point d'entrée humain (pourquoi, captures,
+quickstart) ; ce fichier est le point d'entrée agent (quoi, où, comment modifier).
+
+## Modules (`veille/`)
+
+| Fichier | Rôle |
+|---|---|
+| `cli.py` | Point d'entrée (`veille`), sous-commandes argparse, logging |
+| `config.py` | Chargement/validation de `config.yaml` (dataclasses) |
+| `collect.py` | Récupération RSS/Atom (httpx + feedparser), retry, source `cisa_kev` (JSON) |
+| `rank.py` | Pré-tri heuristique : dédup, regroupement par sujet, score (mots-clés × poids × fraîcheur × couverture) |
+| `process.py` | Notation LLM par grille de critères oui/non (`JUDGE_WEIGHTS`), résumé JSON par article, cache par modèle+version de prompt |
+| `prompts.py` | Templates de prompts (notation, résumé, synthèse d'axe) |
+| `llm.py` | Client HTTP minimal pour tout serveur compatible OpenAI ; `-v` logge requête/réponse complètes + tokens/s (`timings`, extension llama.cpp) |
+| `db.py` | Schéma et accès SQLite (`data/veille.db`) |
+| `report.py` | Rendu Jinja2 → `.md`/`.html`/`.json`, index de l'historique |
+| `check.py` | `veille check-feeds` / `veille discover` : vérification réelle des sources |
+| `templates/` | `report.html.j2` (rapport), `_theme.css` (design système), `report.md.j2`, `index.html.j2`, `redirect.html.j2` |
+
+## Modèle de données (SQLite, `data/veille.db`)
+
+- `articles` : un article collecté (url, titre, source, date, texte extrait, résumé JSON en cache)
+- `article_axes` : note + critères validés par axe pour un article (plusieurs axes possibles par article)
+- `reports` : JSON complet de chaque rapport généré (pour l'historique)
+
+## Config (`config.yaml`, voir `config.example.yaml`)
+
+```yaml
+llm:
+  base_url: http://localhost:11434/v1   # tout serveur compatible OpenAI
+  model: qwen3:8b
+  max_workers: 2                        # parallélisme (= n_slots / OLLAMA_NUM_PARALLEL côté serveur)
+pipeline:
+  candidates_per_axis: 25               # pré-tri → jugés par le LLM
+  min_llm_score: 6                      # seuil de rétention (0-10)
+profile: |                              # injecté dans le prompt de notation
+  Ingénieur infra/sécu, intéressé par X, pas par Y.
+axes:
+  <clé>:
+    title: ...
+    description: ...                    # donné au LLM pour juger la pertinence
+    keywords: [...]                     # pré-tri + routage des shared_feeds
+    feeds: [{name: ..., url: ..., weight: 1.0}]
+shared_feeds: [...]                     # routés vers les axes dont les keywords matchent
+```
+
+## Commandes
+
+```
+veille collect                 # récupère les flux
+veille report                  # trie + résume + génère le rapport
+veille run [--axis <clé>]      # collect + report
+veille links <mot-clé> [--axis] [--days] [--min-score]
+veille prune --older-than <jours>
+veille check-feeds [--catalog sources/catalog.yaml] [--group <thème>]
+veille discover <site...>
+veille export-opml --out <fichier>
+```
+
+## Points d'attention connus
+
+- Petits modèles (≤ 4B) : notation sature à 10/10 — la grille de critères n'y change rien,
+  mesuré sur `qwen3.5-4b`. 9B inconsistant. 30B+ MoE discrimine correctement.
+- MoE : les paramètres actifs par token déterminent la vitesse, pas l'empreinte RAM — le fichier
+  complet doit tenir en mémoire quelle que soit l'architecture.
+- CISA a retiré ses flux RSS (05/2025) → source `kind: cisa_kev` lit le catalogue JSON à la place.
+- Reddit (`www.reddit.com/r/<sub>/.rss`) : 403/429 intermittents selon l'IP/le moment, pas un bug
+  de ce projet — géré par retry + warning, pas de fix côté code possible.
+- Modifier un prompt dans `prompts.py` → incrémenter `JUDGE_VERSION` ou `SUMMARY_VERSION` dans
+  `process.py` pour invalider le cache LLM en base.
+- Le rapport HTML doit rester autonome : aucune ressource externe (police, script, CDN) — un test
+  le vérifie (`tests/test_render.py`).
+
+## Tests
+
+```bash
+make check   # ruff check + ruff format --check + pytest
+```
+
+Aucun appel réseau ni LLM réel dans les tests : `httpx.MockTransport` et LLM simulé (`monkeypatch`).
+
+## Conventions de commit
+
+Voir [CLAUDE.md](CLAUDE.md) : Conventional Commits, français, aucune ligne d'attribution IA dans
+les messages de commit.

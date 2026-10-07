@@ -8,36 +8,87 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
-<img src="docs/screenshots/hero-dark.jpg" width="49%" alt="Rapport veille, en-tête, thème sombre">
-<img src="docs/screenshots/article-light.jpg" width="49%" alt="Fiche article, thème clair">
+<br>
+
+<img src="docs/screenshots/hero-dark.png" width="100%" alt="Rapport veille, en-tête et résumé exécutif, thème sombre">
+
+<sub>Thème sombre — en-tête et résumé exécutif « L'essentiel »</sub>
+
+<br><br>
+
+<img src="docs/screenshots/article-light.png" width="48%" alt="Fiche article dépliée, thème clair">
+<img src="docs/screenshots/mobile.png" width="48%" alt="Rapport sur mobile">
+
+<sub>Thème clair, fiche article dépliée · responsive mobile</sub>
 
 </div>
 
 ## Pourquoi
 
-Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agrégateurs IA grand public envoient le contenu dans le cloud. **veille** fait le tri à la place de l'utilisateur, avec un LLM local (Ollama, llama.cpp, LM Studio, vLLM — n'importe quel serveur compatible OpenAI) : chaque article est jugé contre un profil d'intérêt défini en config, noté par une grille de critères (pas une note libre qui sature), résumé en 5-8 phrases, puis compilé en rapport HTML autonome avec synthèse par axe, citations traçables et historique interrogeable en SQLite.
+Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agrégateurs IA grand public envoient le contenu dans le cloud.
+
+**veille** fait le tri à la place de l'utilisateur, avec un LLM qui tourne en local :
+
+- chaque article est jugé contre un **profil d'intérêt** défini en config, pas un prompt générique
+- noté par une **grille de critères** (dans l'axe ? fait nouveau ? actionnable ?) — pas une note libre, qui sature avec les petits modèles
+- résumé en 5-8 phrases, avec points clés et « pourquoi c'est important »
+- compilé en un **rapport HTML autonome** : synthèse par axe, citations traçables `[n]`, historique interrogeable en SQLite
 
 Rien ne quitte la machine. Aucune clé API requise pour l'usage courant.
 
 ## Pipeline
 
-```
- 1. COLLECTE            2. TRI                          3. COMPILATION                4. RENDU
- flux RSS/Atom   ─►  dédup URL + regroupement     ─►  extraction texte (trafilatura) ─►  rapport .md / .html / .json
- par axe +           par sujet (multi-sources)         résumé JSON par article          (template Jinja commun)
- flux partagés       score heuristique                 synthèse par axe avec [n]        + latest.html
- routés par          (mots-clés × poids source         résumé exécutif tous axes
- mots-clés           × fraîcheur × couverture)
-                     top N ─► LLM : grille
-                     oui/non → note 0-10
-            └──────────────── tout est stocké dans SQLite (data/veille.db) ────────────────┘
+```mermaid
+flowchart LR
+    subgraph S1["1 · Collecte"]
+        direction TB
+        A1["flux RSS/Atom par axe"]
+        A2["flux partagés<br/>routés par mots-clés"]
+    end
+    subgraph S2["2 · Tri"]
+        direction TB
+        B1["dédup URL +<br/>regroupement par sujet"]
+        B2["score heuristique<br/>mots-clés × poids × fraîcheur"]
+        B3["top N → LLM : grille<br/>oui/non → note 0-10"]
+        B1 --> B2 --> B3
+    end
+    subgraph S3["3 · Compilation"]
+        direction TB
+        C1["extraction texte<br/>(trafilatura)"]
+        C2["résumé JSON<br/>par article"]
+        C3["synthèse par axe<br/>avec citations [n]"]
+        C1 --> C2 --> C3
+    end
+    subgraph S4["4 · Rendu"]
+        direction TB
+        D1["template Jinja commun"]
+        D2["rapport .md / .html / .json<br/>+ latest.html"]
+        D1 --> D2
+    end
+    DB[("SQLite<br/>data/veille.db")]
+
+    S1 --> S2 --> S3 --> S4
+    S1 -.-> DB
+    S2 -.-> DB
+    S3 -.-> DB
+
+    classDef s1 fill:#1F3FCC,color:#fff,stroke:none
+    classDef s2 fill:#C2410C,color:#fff,stroke:none
+    classDef s3 fill:#15803D,color:#fff,stroke:none
+    classDef s4 fill:#7A3EB8,color:#fff,stroke:none
+    classDef db fill:#2A2924,color:#fff,stroke:none
+    class A1,A2 s1
+    class B1,B2,B3 s2
+    class C1,C2,C3 s3
+    class D1,D2 s4
+    class DB db
 ```
 
 - **Sources utiles** : un flux a un `weight` ; un sujet repris par plusieurs sources est boosté ; le LLM juge chaque candidat par rapport au `profile` défini dans la config. Seuls les articles ≥ `min_llm_score` sont résumés.
-- **Notation par grille** : une note libre 0-10 sature avec les petits modèles (test réel : 18/18 entre 8 et 10). Le LLM répond donc à des questions fermées — dans l'axe ? fait nouveau ? concret ? actionnable ? impact large ? bruit/marketing ? — et la note est calculée en Python (`process.JUDGE_WEIGHTS`). Les critères validés s'affichent sur chaque fiche.
-- **Économie de LLM** : le pré-tri heuristique limite à `candidates_per_axis` appels de notation par axe ; notes et résumés sont mis en cache en base, **par modèle et version de prompt** (changer `llm.model` régénère tout) ; appels en parallèle (`llm.max_workers`).
-- **Provenance** : si la page ne peut pas être lue, le résumé est fait sur l'extrait du flux — c'est signalé dans le log et sur la fiche (« résumé sur extrait RSS »).
-- **Traçabilité** : chaque affirmation de synthèse cite `[n]` → ancre vers la fiche article → lien source. Les candidats écartés sont listés avec leur note et la raison (« Autres liens évalués »). L'historique complet reste interrogeable.
+- **Notation par grille** : une note libre 0-10 sature avec les petits modèles (test réel : 18/18 entre 8 et 10). Le LLM répond donc à des questions fermées, et la note est calculée en Python (`process.JUDGE_WEIGHTS`). Les critères validés s'affichent sur chaque fiche.
+- **Économie de LLM** : le pré-tri heuristique limite à `candidates_per_axis` appels de notation par axe ; notes et résumés sont mis en cache en base, **par modèle et version de prompt** ; appels en parallèle (`llm.max_workers`).
+- **Provenance** : si la page ne peut pas être lue, le résumé est fait sur l'extrait du flux — signalé dans le log et sur la fiche.
+- **Traçabilité** : chaque affirmation de synthèse cite `[n]` → ancre vers la fiche article → lien source. Les candidats écartés sont listés avec leur note et la raison. L'historique complet reste interrogeable.
 
 ## Installation
 
@@ -59,13 +110,13 @@ Tout serveur compatible OpenAI fonctionne (`llm.base_url`) : Ollama, llama.cpp `
 | Taille | Constat | Usage |
 |---|---|---|
 | 3-4B (ex. `qwen3-4b`, `qwen3.5-4b`) | **Testé** : rapide (≤ 2 s/appel sur GPU modeste), mais la notation sature régulièrement à 10/10 — le tri perd son intérêt | machine sans GPU, ou simple résumé sans tri fin |
-| 7-9B (ex. `qwen3.5-9b`) | **Testé** : meilleure discrimination des notes sur certains axes, mais inconsistant (un axe peut quand même saturer), 3× plus lent qu'un MoE équivalent | compromis correct si la RAM est le facteur limitant |
+| 7-9B (ex. `qwen3.5-9b`) | **Testé** : meilleure discrimination des notes sur certains axes, mais inconsistant, 3× plus lent qu'un MoE équivalent | compromis correct si la RAM est le facteur limitant |
 | 30B+ en MoE (ex. `qwen3-30b-a3b`) | **Testé** : nette discrimination des notes, rapide (peu de paramètres actifs par token malgré la taille totale) | recommandé si la RAM suit — le fichier complet doit tenir en mémoire même en MoE |
 | Cloud (API compatible OpenAI) | Pas de limite matérielle, résultat quasi instantané | si la contrainte « 100 % local » n'est pas absolue ; pointer `llm.base_url` vers le fournisseur, clé API en variable d'environnement |
 
-- Modèles « raisonnants » (qwen3…) : le bloc `<think>` renvoyé est retiré automatiquement ; pour le couper à la source et gagner du temps, `llm.extra_body` (ex. `{reasoning_effort: none}`) ou `--reasoning off` côté serveur selon le backend.
+- Modèles « raisonnants » (qwen3…) : le bloc `<think>` renvoyé est retiré automatiquement ; pour le couper à la source, `llm.extra_body` (ex. `{reasoning_effort: none}`) ou `--reasoning off` côté serveur selon le backend.
 - Parallélisme : `llm.max_workers` n'accélère que si le serveur traite plusieurs requêtes en parallèle (`n_slots` côté llama.cpp, `OLLAMA_NUM_PARALLEL` côté Ollama).
-- `veille -v report` logge chaque requête/réponse complète et les tokens/s réels (extension `timings` de llama.cpp) — utile pour auditer ou comparer des modèles.
+- `veille -v report` logge chaque requête/réponse complète et les tokens/s réels — utile pour auditer ou comparer des modèles.
 
 ## Utilisation
 
@@ -83,76 +134,51 @@ veille prune --older-than 90   # purge des vieux articles (les rapports gardent 
 veille export-opml --out feeds.opml   # flux au format OPML (Miniflux, FreshRSS…)
 ```
 
-Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique de tous les rapports), `latest.html` (redirige vers le dernier) et `latest.json`.
+Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique), `latest.html` et `latest.json`.
 
-Le rapport HTML est pensé pour **donner envie de lire** : chaque fiche met en avant le **titre** et une **accroche**, le résumé complet (5-8 phrases), les points clés et « pourquoi c'est important » restent repliés par défaut (`<details>` natif, un clic pour tout voir, lien direct vers la source). La note de pertinence ne s'affiche plus — elle reste trop bruitée avec un petit modèle pour servir à la lecture, elle continue de piloter le tri en coulisses.
-Autour : bloc « L'essentiel » (résumé exécutif avec renvois vers les fiches), synthèse par axe avec citations `[n]` cliquables, couleur par axe, sommaire fixe, recherche et filtres (source, pertinence, axe, clic sur un tag), liens écartés avec la raison, navigation vers le rapport précédent, thème clair/sombre, impression propre, responsive mobile/desktop. Typographie serif/sans système (aucune ressource externe chargée).
+Le rapport HTML est pensé pour **donner envie de lire** : titre + accroche toujours visibles, résumé complet et points clés repliés par défaut (`<details>` natif, un clic pour tout voir, lien direct vers la source). La note de pertinence ne s'affiche plus — trop bruitée avec un petit modèle pour servir à la lecture — mais continue de piloter le tri en coulisses.
+
+Autour : bloc « L'essentiel », synthèse par axe avec citations cliquables, sommaire fixe, recherche et filtres, liens écartés avec leur raison, navigation entre rapports, thème clair/sombre, impression propre, responsive mobile/desktop.
 
 ### Vérifier les sources (à faire en premier)
 
 ```bash
 veille check-feeds                                   # sources de config.yaml
 veille check-feeds --catalog sources/catalog.yaml --out reports/sources.md   # ~80 sources candidates
-veille check-feeds --catalog sources/catalog.yaml --group cyber_fr
 veille discover cyberveille.esante.gouv.fr next.ink  # trouver le flux d'un site
 ```
 
-Chaque source est réellement téléchargée et parsée avec le même code que la collecte :
-
 | Verdict | Signification |
 |---|---|
-| ✅ OK | flux valide, articles avec titre + lien, dernier article < 30 j (`--stale-days`) |
+| ✅ OK | flux valide, articles avec titre + lien, dernier article < 30 j |
 | 💤 INACTIF | flux valide mais plus alimenté |
 | 🔎 PAGE HTML | l'URL est une page, pas un flux — les flux déclarés par la page sont proposés |
 | ⚠️ VIDE | flux lisible mais aucun article exploitable |
 | ❌ ERREUR | 403 (anti-bot/Cloudflare), 404, 429, timeout, DNS… |
 
-`sources/catalog.yaml` : sources par thème (agrégateurs, tech, tech FR, IA, recherche, cyber, cyber FR, homelab, releases GitHub) avec une note `web` (URL confirmée par recherche) ou `à tester`. Copier les ✅ utiles dans `config.yaml`.
-
-Points connus :
-- **CISA** a retiré ses flux RSS (mai 2025) → source `kind: cisa_kev` qui lit le catalogue JSON des vulnérabilités activement exploitées.
-- **Anthropic** n'a pas de flux officiel → flux communautaires (GitHub) dans le catalogue.
-- **Hugging Face** : items sans `<link>` → repli automatique sur `<guid>`.
-- **Reddit** : `www.reddit.com/r/<sub>/.rss` fonctionne, `old.reddit.com` exige un login ; 403/429 intermittents selon l'IP et le moment, pas un bug — géré par retry + warning.
-- **Phoronix, Cloudflare** : protection anti-bot, 403 fréquents depuis des IP de datacenter (moins depuis une IP résidentielle).
+`sources/catalog.yaml` : ~80 sources par thème avec une note `web` (confirmée) ou `à tester`. Détails sources connues (CISA, Reddit, Hugging Face…) : voir [llms.txt](llms.txt).
 
 ### Planification
 
-cron :
-```
+```bash
+# cron
 0 */2 * * *  cd /opt/llm_veille_tech && .venv/bin/veille collect
 30 7 * * *   cd /opt/llm_veille_tech && .venv/bin/veille report
 ```
 
-Docker :
 ```bash
+# Docker
 docker compose up -d ollama web
 docker compose exec ollama ollama pull qwen3:8b
 docker compose run --rm veille run      # avec base_url: http://ollama:11434/v1
-# rapports : http://<lab>:8080/  (index.html = historique)
 ```
-
-## Ajouter un axe
-
-Dans `config.yaml`, sous `axes:` :
-
-```yaml
-  homelab:
-    title: Homelab & self-hosting
-    description: Proxmox, NAS, réseau, domotique.
-    keywords: [proxmox, truenas, homelab, self-hosted, opnsense, wireguard]
-    feeds:
-      - {name: r/selfhosted, url: "https://www.reddit.com/r/selfhosted/top/.rss?t=day"}
-```
-
-`keywords` sert au pré-tri et au routage des `shared_feeds` (HN, Lobsters…) ; `description` est donnée au LLM pour juger la pertinence.
-Sources sans RSS : beaucoup de sites en ont un caché (`/feed`, `/rss`, `/atom.xml`) ; sinon [RSS-Bridge](https://github.com/RSS-Bridge/rss-bridge) auto-hébergé, ou `hnrss.org`, `reddit.com/r/<sub>/.rss`, chaînes YouTube (`/feeds/videos.xml?channel_id=`), releases GitHub (`/<owner>/<repo>/releases.atom`).
 
 ## Personnaliser
 
-- Rapport : `veille/templates/report.html.j2` (HTML rendu directement depuis les données), `_theme.css` (couleurs, typo), `report.md.j2` (export texte), `index.html.j2` (historique).
-- Prompts : `veille/prompts.py` ; poids de la grille : `JUDGE_WEIGHTS` dans `veille/process.py`. Modifier un prompt → incrémenter `JUDGE_VERSION` / `SUMMARY_VERSION` pour invalider le cache.
-- Données brutes pour analyse : `sqlite3 data/veille.db` — tables `articles` (texte complet, résumé JSON), `article_axes` (notes par axe), `reports` (JSON de chaque rapport).
+- **Ajouter un axe** : dans `config.yaml`, sous `axes:` — voir [llms.txt](llms.txt) pour un exemple complet.
+- **Rapport** : `veille/templates/report.html.j2`, `_theme.css`.
+- **Prompts** : `veille/prompts.py` ; poids de la grille : `JUDGE_WEIGHTS` dans `veille/process.py`.
+- **Données brutes** : `sqlite3 data/veille.db` — tables `articles`, `article_axes`, `reports`.
 
 ## Développement
 
@@ -161,7 +187,7 @@ make install   # dépendances figées + ruff + pytest + hook pre-commit
 make check     # lint + format + tests (identique à la CI)
 ```
 
-Conventions (branches, Conventional Commits, changelog) : [CONTRIBUTING.md](CONTRIBUTING.md). Historique des versions : [CHANGELOG.md](CHANGELOG.md).
+Conventions : [CONTRIBUTING.md](CONTRIBUTING.md) · Historique : [CHANGELOG.md](CHANGELOG.md) · Vue d'ensemble pour agents IA : [llms.txt](llms.txt)
 
 ## À propos
 

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>veille — dossier de projet</title>
+<meta name="description" content="Veille technologique 100 % locale : collecte RSS, tri et résumé par LLM local, rapport HTML autonome.">
+<style>
+  :root {
+    --paper: #F7F5F0;
+    --ink: #1A1A1A;
+    --ink-soft: #4A4740;
+    --muted: #8A8374;
+    --rule: #DCD7C9;
+    --accent: #2C3E63;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 18px/1.65 var(--serif);
+    background-image: radial-gradient(var(--rule) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  a { color: var(--accent); }
+  .mono { font-family: var(--mono); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+  header.masthead { padding: 56px 0 20px; }
+  .tag {
+    display: inline-block; font: 12px var(--mono); letter-spacing: .04em; color: var(--ink-soft);
+    border: 1px solid var(--rule); border-radius: 2px; padding: 5px 10px; background: var(--paper);
+  }
+  h1 { font-size: 40px; font-weight: 500; letter-spacing: -.01em; margin: 22px 0 10px; }
+  .tagline { font-size: 19px; color: var(--ink-soft); margin: 0 0 24px; max-width: 540px; }
+  .statusline { font: 13px var(--mono); color: var(--muted); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 10px 0; }
+  .statusline span { margin-right: 18px; }
+  .statusline a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px dotted var(--muted); }
+
+  figure { margin: 36px 0 8px; }
+  figure img { width: 100%; display: block; border: 1px solid var(--rule); }
+  figcaption { font: 13px var(--mono); color: var(--muted); margin-top: 8px; }
+
+  section { margin-top: 58px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .sec-num { font: 13px var(--mono); color: var(--muted); flex: none; }
+  h2 { font-size: 24px; font-weight: 500; margin: 0; letter-spacing: -.005em; }
+  h3 { font-size: 17px; font-weight: 600; margin: 28px 0 10px; }
+
+  p { margin: 0 0 16px; }
+  ul { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  code { font-family: var(--mono); font-size: 15px; background: #EFEBDF; padding: 1px 5px; border-radius: 3px; }
+  pre {
+    background: #161512; color: #D8D4C9; border-radius: 4px; padding: 16px 18px;
+    overflow-x: auto; font: 14px/1.6 var(--mono); margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 0 0 16px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 12px var(--mono); text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; }
+
+  .shots { display: flex; gap: 20px; flex-wrap: wrap; margin: 36px 0 8px; }
+  .shots .d { flex: 1 1 400px; }
+  .shots .m { flex: 0 0 170px; }
+  .shots img { width: 100%; display: block; border: 1px solid var(--rule); }
+  .shots figcaption { font: 13px var(--mono); color: var(--muted); margin-top: 8px; }
+
+  .mermaid { background: transparent; margin: 8px 0 20px; }
+
+  footer { margin: 80px 0 56px; padding-top: 24px; border-top: 1px solid var(--rule); font: 13px var(--mono); color: var(--muted); }
+  footer a { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="tag">DOSSIER — PROJET PERSONNEL</span>
+    <h1>veille</h1>
+    <p class="tagline">Veille technologique 100 % locale. Des flux RSS à un rapport lisible, triés et résumés par un LLM qui tourne sur ta machine — rien ne sort du poste.</p>
+    <div class="statusline">
+      <span>CI : <a href="https://github.com/rom98759/llm_veille_tech/actions">passing</a></span>
+      <span>Licence : <a href="https://github.com/rom98759/llm_veille_tech/blob/master/LICENSE">MIT</a></span>
+      <span>Python 3.10+</span>
+      <span><a href="https://github.com/rom98759/llm_veille_tech">dépôt GitHub ↗</a></span>
+    </div>
+  </header>
+
+  <figure>
+    <img src="screenshots/hero-dark.png" alt="Rapport veille, en-tête et résumé exécutif, thème sombre">
+    <figcaption>RÉF. 00 — rapport complet, thème sombre, généré localement</figcaption>
+  </figure>
+
+  <section>
+    <div class="sec-head"><span class="sec-num mono">01</span><h2>Pourquoi</h2></div>
+    <p>Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agrégateurs IA grand public envoient le contenu dans le cloud. <strong>veille</strong> fait le tri à la place de l'utilisateur, avec un LLM qui tourne en local :</p>
+    <ul>
+      <li>chaque article est jugé contre un <strong>profil d'intérêt</strong> défini en config, pas un prompt générique</li>
+      <li>noté par une <strong>grille de critères</strong> fermés — pas une note libre, qui sature avec les petits modèles</li>
+      <li>résumé en 5-8 phrases, avec points clés et « pourquoi c'est important »</li>
+      <li>compilé en un <strong>rapport HTML autonome</strong> : synthèse par axe, citations traçables <code>[n]</code>, historique interrogeable en SQLite</li>
+    </ul>
+    <p>Rien ne quitte la machine. Aucune clé API requise pour l'usage courant.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num mono">02</span><h2>Pipeline</h2></div>
+    <pre class="mermaid">
+flowchart LR
+    A["1 · Collecte"] --> B["2 · Tri heuristique"]
+    B --> J["grille LLM"]
+    J --> C["3 · Compilation"]
+    C --> D["4 · Rendu"]
+    DB[("SQLite")]
+    A -.-> DB
+    B -.-> DB
+    C -.-> DB
+
+    classDef neutral fill:#2A2A28,color:#fff,stroke:none
+    classDef accent fill:#2C3E63,color:#fff,stroke:none
+    classDef db fill:#55534A,color:#fff,stroke:none
+    class A,B,C,D neutral
+    class J accent
+    class DB db
+    </pre>
+    <p>Une note libre 0-10 sature avec les petits modèles — mesuré : 18/18 entre 8 et 10 sur un test réel. Le LLM répond donc à des questions fermées ; la note est calculée en Python, pas par le modèle.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num mono">03</span><h2>Aperçu</h2></div>
+    <div class="shots">
+      <div class="d">
+        <img src="screenshots/article-dark.png" alt="Fiche article dépliée, desktop">
+        <figcaption>RÉF. 01 — fiche dépliée, desktop</figcaption>
+      </div>
+      <div class="m">
+        <img src="screenshots/mobile.png" alt="Fiche dépliée, mobile">
+        <figcaption>RÉF. 02 — même fiche, mobile</figcaption>
+      </div>
+    </div>
+    <p>Résumé complet et points clés repliés par défaut, un clic pour tout voir. Thème clair/sombre synchronisé avec les préférences système.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num mono">04</span><h2>Installation</h2></div>
+    <pre><code>python -m venv .venv && . .venv/bin/activate
+pip install -e .
+cp config.example.yaml config.yaml
+ollama pull qwen3:8b
+veille run</code></pre>
+
+    <h3>Choix du modèle</h3>
+    <table>
+      <tr><th>Taille</th><th>Constat</th></tr>
+      <tr><td>3-4B</td><td>rapide, mais sature à 10/10 — le tri perd son intérêt</td></tr>
+      <tr><td>7-9B</td><td>meilleure discrimination, inconsistant, 3× plus lent</td></tr>
+      <tr><td>30B+ MoE</td><td>nette discrimination, rapide malgré la taille totale</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num mono">05</span><h2>À propos</h2></div>
+    <p>Projet personnel, construit avec l'aide d'un assistant IA (Claude) en pair-programming — architecture, décisions et tests validés manuellement à chaque étape. Licence MIT.</p>
+  </section>
+
+  <footer>
+    <a href="https://github.com/rom98759/llm_veille_tech">github.com/rom98759/llm_veille_tech</a> · <a href="https://github.com/rom98759/llm_veille_tech/blob/master/README.md">README</a> · <a href="https://github.com/rom98759/llm_veille_tech/blob/master/llms.txt">llms.txt</a>
+  </footer>
+
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "base", themeVariables: { fontFamily: "ui-monospace, Menlo, monospace" } });
+</script>
+</body>
+</html>

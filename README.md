@@ -5,25 +5,18 @@
 **Veille technologique 100 % locale.** Des flux RSS à un rapport lisible, triés et résumés par un LLM qui tourne sur ta machine — rien ne sort du poste.
 
 [![CI](https://github.com/rom98759/llm_veille_tech/actions/workflows/ci.yml/badge.svg)](https://github.com/rom98759/llm_veille_tech/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-1a1a1a?style=flat-square)](pyproject.toml)
 
 <br>
 
 <img src="docs/screenshots/hero-dark.png" width="100%" alt="Rapport veille, en-tête et résumé exécutif, thème sombre">
 
-<sub>Thème sombre — en-tête et résumé exécutif « L'essentiel »</sub>
-
-<br><br>
-
-<img src="docs/screenshots/article-dark.png" width="48%" alt="Fiches article, vue desktop">
-<img src="docs/screenshots/mobile.png" width="48%" alt="Fiche dépliée sur mobile">
-
-<sub>Vue desktop · fiche dépliée sur mobile (responsive, thème clair/sombre disponible)</sub>
-
 </div>
 
-## Pourquoi
+`RÉF. 00 — rapport complet, thème sombre, généré localement`
+
+## 01 · Pourquoi
 
 Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agrégateurs IA grand public envoient le contenu dans le cloud.
 
@@ -36,7 +29,7 @@ Les lecteurs RSS classiques entassent des centaines d'articles non lus. Les agr�
 
 Rien ne quitte la machine. Aucune clé API requise pour l'usage courant.
 
-## Pipeline
+## 02 · Pipeline
 
 ```mermaid
 flowchart LR
@@ -72,15 +65,11 @@ flowchart LR
     S2 -.-> DB
     S3 -.-> DB
 
-    classDef s1 fill:#1F3FCC,color:#fff,stroke:none
-    classDef s2 fill:#C2410C,color:#fff,stroke:none
-    classDef s3 fill:#15803D,color:#fff,stroke:none
-    classDef s4 fill:#7A3EB8,color:#fff,stroke:none
-    classDef db fill:#2A2924,color:#fff,stroke:none
-    class A1,A2 s1
-    class B1,B2,B3 s2
-    class C1,C2,C3 s3
-    class D1,D2 s4
+    classDef neutral fill:#2A2A28,color:#fff,stroke:none
+    classDef accent fill:#2C3E63,color:#fff,stroke:none
+    classDef db fill:#55534A,color:#fff,stroke:none
+    class A1,A2,B1,B2,C1,C2,C3,D1,D2 neutral
+    class B3 accent
     class DB db
 ```
 
@@ -90,7 +79,16 @@ flowchart LR
 - **Provenance** : si la page ne peut pas être lue, le résumé est fait sur l'extrait du flux — signalé dans le log et sur la fiche.
 - **Traçabilité** : chaque affirmation de synthèse cite `[n]` → ancre vers la fiche article → lien source. Les candidats écartés sont listés avec leur note et la raison. L'historique complet reste interrogeable.
 
-## Installation
+## 03 · Aperçu
+
+<img src="docs/screenshots/article-dark.png" width="64%" alt="Fiche article dépliée, vue desktop">
+<img src="docs/screenshots/mobile.png" width="30%" alt="Fiche dépliée sur mobile">
+
+`RÉF. 01 — fiche dépliée, desktop`   ·   `RÉF. 02 — même fiche, mobile`
+
+Résumé complet et points clés repliés par défaut (`<details>` natif, un clic pour tout voir). Thème clair/sombre synchronisé avec les préférences système. La note de pertinence ne s'affiche plus — trop bruitée avec un petit modèle pour servir à la lecture — mais continue de piloter le tri en coulisses.
+
+## 04 · Installation
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
@@ -118,7 +116,7 @@ Tout serveur compatible OpenAI fonctionne (`llm.base_url`) : Ollama, llama.cpp `
 - Parallélisme : `llm.max_workers` n'accélère que si le serveur traite plusieurs requêtes en parallèle (`n_slots` côté llama.cpp, `OLLAMA_NUM_PARALLEL` côté Ollama).
 - `veille -v report` logge chaque requête/réponse complète et les tokens/s réels — utile pour auditer ou comparer des modèles.
 
-## Utilisation
+## 05 · Utilisation
 
 ```bash
 veille collect                 # récupère les flux (à lancer souvent, ex. toutes les 2 h)
@@ -136,9 +134,7 @@ veille export-opml --out feeds.opml   # flux au format OPML (Miniflux, FreshRSS�
 
 Sorties dans `reports/` : `veille-<date>.html` (autonome, aucune ressource externe, ouvrable en `file://`), `.md`, `.json`, plus `index.html` (historique), `latest.html` et `latest.json`.
 
-Le rapport HTML est pensé pour **donner envie de lire** : titre + accroche toujours visibles, résumé complet et points clés repliés par défaut (`<details>` natif, un clic pour tout voir, lien direct vers la source). La note de pertinence ne s'affiche plus — trop bruitée avec un petit modèle pour servir à la lecture — mais continue de piloter le tri en coulisses.
-
-Autour : bloc « L'essentiel », synthèse par axe avec citations cliquables, sommaire fixe, recherche et filtres, liens écartés avec leur raison, navigation entre rapports, thème clair/sombre, impression propre, responsive mobile/desktop.
+Autour : bloc « L'essentiel », synthèse par axe avec citations cliquables, sommaire fixe, recherche et filtres, liens écartés avec leur raison, navigation entre rapports, impression propre.
 
 ### Vérifier les sources (à faire en premier)
 
@@ -150,11 +146,11 @@ veille discover cyberveille.esante.gouv.fr next.ink  # trouver le flux d'un site
 
 | Verdict | Signification |
 |---|---|
-| ✅ OK | flux valide, articles avec titre + lien, dernier article < 30 j |
-| 💤 INACTIF | flux valide mais plus alimenté |
-| 🔎 PAGE HTML | l'URL est une page, pas un flux — les flux déclarés par la page sont proposés |
-| ⚠️ VIDE | flux lisible mais aucun article exploitable |
-| ❌ ERREUR | 403 (anti-bot/Cloudflare), 404, 429, timeout, DNS… |
+| `OK` | flux valide, articles avec titre + lien, dernier article < 30 j |
+| `INACTIF` | flux valide mais plus alimenté |
+| `PAGE HTML` | l'URL est une page, pas un flux — les flux déclarés par la page sont proposés |
+| `VIDE` | flux lisible mais aucun article exploitable |
+| `ERREUR` | 403 (anti-bot/Cloudflare), 404, 429, timeout, DNS… |
 
 `sources/catalog.yaml` : ~80 sources par thème avec une note `web` (confirmée) ou `à tester`. Détails sources connues (CISA, Reddit, Hugging Face…) : voir [llms.txt](llms.txt).
 
@@ -173,14 +169,14 @@ docker compose exec ollama ollama pull qwen3:8b
 docker compose run --rm veille run      # avec base_url: http://ollama:11434/v1
 ```
 
-## Personnaliser
+## 06 · Personnaliser
 
 - **Ajouter un axe** : dans `config.yaml`, sous `axes:` — voir [llms.txt](llms.txt) pour un exemple complet.
 - **Rapport** : `veille/templates/report.html.j2`, `_theme.css`.
 - **Prompts** : `veille/prompts.py` ; poids de la grille : `JUDGE_WEIGHTS` dans `veille/process.py`.
 - **Données brutes** : `sqlite3 data/veille.db` — tables `articles`, `article_axes`, `reports`.
 
-## Développement
+## 07 · Développement
 
 ```bash
 make install   # dépendances figées + ruff + pytest + hook pre-commit
@@ -189,6 +185,6 @@ make check     # lint + format + tests (identique à la CI)
 
 Conventions : [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) · Historique : [docs/CHANGELOG.md](docs/CHANGELOG.md) · Vue d'ensemble pour agents IA : [llms.txt](llms.txt)
 
-## À propos
+## 08 · À propos
 
 Projet personnel, construit avec l'aide d'un assistant IA (Claude) en pair-programming — architecture, décisions et tests validés manuellement à chaque étape, pas de génération en pilote automatique. Licence [MIT](LICENSE).

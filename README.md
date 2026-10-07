@@ -8,6 +8,8 @@
 [![License](https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-1a1a1a?style=flat-square)](pyproject.toml)
 
+[Page de présentation complète ↗](https://rom98759.github.io/llm_veille_tech/)
+
 <br>
 
 <img src="docs/screenshots/hero-dark.png" width="100%" alt="Rapport veille, en-tête et résumé exécutif, thème sombre">

@@ -23,7 +23,7 @@ Le hook pre-commit lance ruff et quelques vérifications (espaces, YAML/TOML, cl
 - Messages au format [Conventional Commits](https://www.conventionalcommits.org/fr/), description en français :
   `feat(report): filtre par source`, `fix(collect): nouvel essai sur HTTP 429`, `docs: choix du modèle`.
   Types : `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`.
-- Une modification de comportement visible va dans `CHANGELOG.md` (section « Non publié »).
+- Une modification de comportement visible va dans `docs/CHANGELOG.md` (section « Non publié »).
 
 ## Conventions du code
 

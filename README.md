@@ -187,7 +187,7 @@ make install   # dépendances figées + ruff + pytest + hook pre-commit
 make check     # lint + format + tests (identique à la CI)
 ```
 
-Conventions : [CONTRIBUTING.md](CONTRIBUTING.md) · Historique : [CHANGELOG.md](CHANGELOG.md) · Vue d'ensemble pour agents IA : [llms.txt](llms.txt)
+Conventions : [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) · Historique : [docs/CHANGELOG.md](docs/CHANGELOG.md) · Vue d'ensemble pour agents IA : [llms.txt](llms.txt)
 
 ## À propos
 

@@ -25,5 +25,5 @@ Ce fichier prime sur les préférences globales pour ce dépôt.
 
 - `README.md` est la vitrine du projet (portfolio) : garder à jour les captures d'écran dans
   `docs/screenshots/` si le rendu HTML change visuellement.
-- `CHANGELOG.md` suit [Keep a Changelog](https://keepachangelog.com/) — une entrée par changement
+- `docs/CHANGELOG.md` suit [Keep a Changelog](https://keepachangelog.com/) — une entrée par changement
   notable, pas par commit.

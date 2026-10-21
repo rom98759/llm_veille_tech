@@ -8,9 +8,6 @@ Ce fichier prime sur les préférences globales pour ce dépôt.
   (`feat`, `fix`, `refactor`, `docs`, `style`, `test`, `build`, `chore`).
 - Résumé en français ; corps de commit en français, qui explique le *pourquoi*, pas juste le *quoi*
   (le diff montre déjà le quoi).
-- **Jamais** de ligne d'attribution IA (`Co-Authored-By: Claude...`, `Claude-Session: ...`,
-  ou équivalent) dans les messages de commit — le dépôt est public, l'usage de l'IA est mentionné
-  une fois dans le README, pas répété sur chaque commit.
 - Un commit = un changement logique cohérent. Pas de commits "wip" ou "fix typo" qui cassent la
   lisibilité de l'historique : squasher avant de pousser si besoin.
 
